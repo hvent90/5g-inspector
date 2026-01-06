@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>5G Signal Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0c;
+      --surface: #111114;
+      --border: #1e1e24;
+      --text: #e8e8ed;
+      --text-dim: #6b6b76;
+      --accent: #e20074;
+      --good: #22c55e;
+      --ok: #eab308;
+      --bad: #ef4444;
+    }
+
+    html, body {
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.4;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 8px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 8px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .logo-text {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .status-badge {
+      font-size: 10px;
+      padding: 3px 6px;
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--good);
+      border-radius: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+    }
+
+    .section-badge {
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Metrics with inline charts */
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .metric {
+      padding: 8px 10px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric:nth-child(2n) { border-right: none; }
+    .metric:nth-last-child(-n+2) { border-bottom: none; }
+
+    .metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+
+    .metric-value {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .metric-unit {
+      font-size: 9px;
+      color: var(--text-dim);
+      margin-left: 2px;
+    }
+
+    .metric-value.good { color: var(--good); }
+    .metric-value.ok { color: var(--ok); }
+    .metric-value.bad { color: var(--bad); }
+
+    /* Mini sparkline per metric */
+    .chart-wrap {
+      position: relative;
+    }
+
+    .sparkline {
+      display: flex;
+      align-items: flex-end;
+      height: 24px;
+      gap: 1px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 2px;
+      padding: 2px;
+      padding-bottom: 10px;
+    }
+
+    .spark-bar {
+      flex: 1;
+      min-width: 1px;
+      border-radius: 1px;
+    }
+
+    .chart-axis {
+      display: flex;
+      justify-content: space-between;
+      position: absolute;
+      bottom: 0;
+      left: 2px;
+      right: 2px;
+      font-size: 7px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    /* Connection info */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .info-item {
+      padding: 8px 10px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .info-item:nth-child(2n) { border-right: none; }
+    .info-item:nth-last-child(-n+2) { border-bottom: none; }
+
+    .info-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 1px;
+    }
+
+    .info-value {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .info-value a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer {
+      padding: 8px 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    .device-name {
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .poll-count {
+      color: var(--accent);
+    }
+
+    @media (max-width: 400px) {
+      .container { padding: 4px; }
+      .metric { padding: 6px 8px; }
+      .metric-value { font-size: 16px; }
+      .sparkline { height: 20px; }
+    }
+
+    @media (min-width: 500px) {
+      .metrics { grid-template-columns: repeat(4, 1fr); }
+      .metric:nth-child(2n) { border-right: 1px solid var(--border); }
+      .metric:nth-child(4n) { border-right: none; }
+      .metric { border-bottom: none; }
+      .info-grid { grid-template-columns: repeat(4, 1fr); }
+      .info-item:nth-child(2n) { border-right: 1px solid var(--border); }
+      .info-item:nth-child(4n) { border-right: none; }
+      .info-item { border-bottom: none; }
+    }
+
+    /* Speed Test Section */
+    .speedtest-section {
+      margin-bottom: 6px;
+    }
+
+    .speedtest-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity 0.2s, background 0.2s;
+    }
+
+    .speedtest-btn:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    .speedtest-btn:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+    }
+
+    .speedtest-btn.running {
+      background: var(--ok);
+      animation: pulse 1s infinite;
+    }
+
+    .speedtest-results {
+      padding: 10px;
+    }
+
+    .speedtest-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .speed-metric {
+      text-align: center;
+      padding: 12px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 4px;
+    }
+
+    .speed-metric-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .speed-metric-value {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -1px;
+    }
+
+    .speed-metric-unit {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: 2px;
+    }
+
+    .speedtest-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .speedtest-detail {
+      text-align: center;
+    }
+
+    .speedtest-detail-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+
+    .speedtest-detail-value {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .speedtest-signal {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 9px;
+      color: var(--text-dim);
+    }
+
+    .speedtest-signal-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .speedtest-history {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .speedtest-history-title {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .speedtest-history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .speedtest-history-item:last-child {
+      border-bottom: none;
+    }
+
+    .speedtest-history-time {
+      color: var(--text-dim);
+    }
+
+    .speedtest-history-speeds {
+      display: flex;
+      gap: 12px;
+    }
+
+    .speedtest-error {
+      padding: 10px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--bad);
+      border-radius: 4px;
+      color: var(--bad);
+      font-size: 11px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <div class="logo-icon"></div>
+        <span class="logo-text">5G Monitor</span>
+      </div>
+      <div class="status-badge" id="reg-status">--</div>
+    </header>
+
+    <!-- 5G Signal -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">5G NR</span>
+        <span class="section-badge" id="5g-band">--</span>
+      </div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">SINR</span>
+            <span><span class="metric-value" id="5g-sinr">--</span><span class="metric-unit">dB</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-5g-sinr"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSRP</span>
+            <span><span class="metric-value" id="5g-rsrp">--</span><span class="metric-unit">dBm</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-5g-rsrp"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSRQ</span>
+            <span><span class="metric-value" id="5g-rsrq">--</span><span class="metric-unit">dB</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-5g-rsrq"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSSI</span>
+            <span><span class="metric-value" id="5g-rssi">--</span><span class="metric-unit">dBm</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-5g-rssi"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4G LTE Signal -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">4G LTE</span>
+        <span class="section-badge" id="4g-band">--</span>
+      </div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">SINR</span>
+            <span><span class="metric-value" id="4g-sinr">--</span><span class="metric-unit">dB</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-4g-sinr"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSRP</span>
+            <span><span class="metric-value" id="4g-rsrp">--</span><span class="metric-unit">dBm</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-4g-rsrp"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSRQ</span>
+            <span><span class="metric-value" id="4g-rsrq">--</span><span class="metric-unit">dB</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-4g-rsrq"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-top">
+            <span class="metric-label">RSSI</span>
+            <span><span class="metric-value" id="4g-rssi">--</span><span class="metric-unit">dBm</span></span>
+          </div>
+          <div class="chart-wrap">
+            <div class="sparkline" id="chart-4g-rssi"></div>
+            <div class="chart-axis"><span>60s</span><span>30s</span><span>now</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Metrics -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Advanced</span>
+        <span class="section-badge" id="conn-mode">--</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">5G Capacity</div>
+          <div class="info-value" id="adv-5g-capacity">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">5G Band</div>
+          <div class="info-value" id="adv-5g-band">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">4G Capacity</div>
+          <div class="info-value" id="adv-4g-capacity">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">4G Band</div>
+          <div class="info-value" id="adv-4g-band">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connection Details -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Connection</span>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">Tower</div>
+          <div class="info-value"><a id="tower-id" href="#" target="_blank">--</a></div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Cell ID</div>
+          <div class="info-value" id="cell-id">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Uptime</div>
+          <div class="info-value" id="uptime">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">GW Err</div>
+          <div class="info-value" id="gw-errors">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed Test -->
+    <div class="section speedtest-section">
+      <div class="section-header">
+        <span class="section-title">Speed Test</span>
+        <span class="section-badge" id="speedtest-status">Ready</span>
+      </div>
+      <div style="padding: 10px;">
+        <button class="speedtest-btn" id="speedtest-btn" onclick="runSpeedTest()">
+          Run Speed Test
+        </button>
+      </div>
+      <div id="speedtest-results" class="speedtest-results" style="display: none;">
+        <div class="speedtest-main">
+          <div class="speed-metric">
+            <div class="speed-metric-label">Download</div>
+            <div>
+              <span class="speed-metric-value" id="speedtest-download">--</span>
+              <span class="speed-metric-unit">Mbps</span>
+            </div>
+          </div>
+          <div class="speed-metric">
+            <div class="speed-metric-label">Upload</div>
+            <div>
+              <span class="speed-metric-value" id="speedtest-upload">--</span>
+              <span class="speed-metric-unit">Mbps</span>
+            </div>
+          </div>
+        </div>
+        <div class="speedtest-details">
+          <div class="speedtest-detail">
+            <div class="speedtest-detail-label">Ping</div>
+            <div class="speedtest-detail-value" id="speedtest-ping">--</div>
+          </div>
+          <div class="speedtest-detail">
+            <div class="speedtest-detail-label">Jitter</div>
+            <div class="speedtest-detail-value" id="speedtest-jitter">--</div>
+          </div>
+          <div class="speedtest-detail">
+            <div class="speedtest-detail-label">Server</div>
+            <div class="speedtest-detail-value" id="speedtest-server">--</div>
+          </div>
+        </div>
+        <div class="speedtest-signal" id="speedtest-signal-info"></div>
+      </div>
+      <div id="speedtest-error" class="speedtest-error" style="display: none; margin: 10px;"></div>
+      <div id="speedtest-history-container" class="speedtest-history" style="display: none; padding: 0 10px 10px;">
+        <div class="speedtest-history-title">Recent Tests</div>
+        <div id="speedtest-history"></div>
+      </div>
+    </div>
+
+    <footer>
+      <span class="device-name" id="device-info">Loading...</span>
+      <span id="last-update">--</span>
+    </footer>
+  </div>
+
+  <script>
+    const API_URL = '/api/signal';
+    const STATS_URL = '/api/stats';
+    const REFRESH_INTERVAL = 200;
+    const CHART_DURATION_SEC = 60;
+    const CHART_BARS = 60; // Fixed number of bars (1 per second for clean visuals)
+    const SAMPLES_PER_BAR = Math.floor((CHART_DURATION_SEC * 1000) / REFRESH_INTERVAL / CHART_BARS);
+    let lastDataHash = null;
+    let sampleCounter = 0;
+
+    // History for each metric - pre-initialized with nulls for fixed-width chart
+    const history = {
+      '5g-sinr': Array(CHART_BARS).fill(null),
+      '5g-rsrp': Array(CHART_BARS).fill(null),
+      '5g-rsrq': Array(CHART_BARS).fill(null),
+      '5g-rssi': Array(CHART_BARS).fill(null),
+      '4g-sinr': Array(CHART_BARS).fill(null),
+      '4g-rsrp': Array(CHART_BARS).fill(null),
+      '4g-rsrq': Array(CHART_BARS).fill(null),
+      '4g-rssi': Array(CHART_BARS).fill(null)
+    };
+
+    // Accumulator for averaging samples into bars
+    const accumulator = {
+      '5g-sinr': [], '5g-rsrp': [], '5g-rsrq': [], '5g-rssi': [],
+      '4g-sinr': [], '4g-rsrp': [], '4g-rsrq': [], '4g-rssi': []
+    };
+
+    // Rating thresholds
+    const thresholds = {
+      sinr: { good: 20, ok: 10 },
+      rsrp: { good: -80, ok: -100 },
+      rsrq: { good: -10, ok: -15 },
+      rssi: { good: -65, ok: -75 }
+    };
+
+    function getRate(type, val) {
+      const t = thresholds[type];
+      if (type === 'sinr') {
+        return val >= t.good ? 'good' : val >= t.ok ? 'ok' : 'bad';
+      }
+      // For negative values (rsrp, rsrq, rssi), higher (less negative) is better
+      return val >= t.good ? 'good' : val >= t.ok ? 'ok' : 'bad';
+    }
+
+    function getColor(type, val) {
+      const rate = getRate(type, val);
+      return rate === 'good' ? 'var(--good)' : rate === 'ok' ? 'var(--ok)' : 'var(--bad)';
+    }
+
+    function formatUptime(seconds) {
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (d > 0) return `${d}d ${h}h`;
+      if (h > 0) return `${h}h ${m}m`;
+      return `${m}m`;
+    }
+
+    // Pre-create fixed bars for all charts on page load
+    function initCharts() {
+      Object.keys(history).forEach(chartId => {
+        const chart = document.getElementById('chart-' + chartId);
+        if (!chart) return;
+        chart.innerHTML = '';
+        for (let i = 0; i < CHART_BARS; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'spark-bar';
+          bar.style.height = '2px';
+          bar.style.background = 'var(--border)';
+          chart.appendChild(bar);
+        }
+      });
+    }
+
+    function updateChart(chartId, data, type) {
+      const chart = document.getElementById('chart-' + chartId);
+      if (!chart) return;
+
+      const bars = chart.children;
+
+      // Filter out nulls for min/max calculation
+      const validData = data.filter(v => v !== null);
+      if (validData.length === 0) return;
+
+      // Single-pass min/max on valid data only
+      let min = validData[0], max = validData[0];
+      for (let i = 1; i < validData.length; i++) {
+        if (validData[i] < min) min = validData[i];
+        if (validData[i] > max) max = validData[i];
+      }
+      const range = max - min || 1;
+
+      // Update fixed bars - null values show as empty
+      for (let i = 0; i < CHART_BARS; i++) {
+        if (data[i] === null) {
+          bars[i].style.height = '2px';
+          bars[i].style.background = 'var(--border)';
+        } else {
+          const height = ((data[i] - min) / range) * 100;
+          bars[i].style.height = `${Math.max(5, height)}%`;
+          bars[i].style.background = getColor(type, data[i]);
+        }
+      }
+    }
+
+    function updateMetric(id, val, type) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val;
+      el.className = 'metric-value ' + getRate(type, val);
+
+      // Accumulate samples for averaging into bars
+      if (accumulator[id] !== undefined) {
+        accumulator[id].push(val);
+      }
+    }
+
+    // Called once per "bar period" to shift data and update charts
+    function commitBarUpdate() {
+      Object.keys(history).forEach(id => {
+        const samples = accumulator[id];
+        if (samples.length > 0) {
+          // Average the accumulated samples
+          const avg = samples.reduce((a, b) => a + b, 0) / samples.length;
+          // Shift history left and add new value at the end
+          history[id].shift();
+          history[id].push(avg);
+          // Clear accumulator
+          accumulator[id] = [];
+        }
+      });
+
+      // Schedule chart updates for all metrics
+      const types = { sinr: 'sinr', rsrp: 'rsrp', rsrq: 'rsrq', rssi: 'rssi' };
+      Object.keys(history).forEach(id => {
+        const type = id.split('-')[1]; // e.g., '5g-sinr' -> 'sinr'
+        scheduleChartUpdate(id, history[id], type);
+      });
+    }
+
+    async function fetchData() {
+      try {
+        // Fetch signal data and stats in parallel
+        const [signalRes, statsRes] = await Promise.all([
+          fetch(API_URL),
+          fetch(STATS_URL)
+        ]);
+
+        if (!signalRes.ok) throw new Error(`HTTP ${signalRes.status}`);
+
+        const data = await signalRes.json();
+        const stats = await statsRes.json();
+        const dataAge = signalRes.headers.get('X-Data-Age-Ms');
+
+        // Check if data actually changed
+        const dataHash = `${data.signal['5g'].sinr}-${data.signal['5g'].rsrp}-${data.signal['4g'].sinr}`;
+        const isNewData = dataHash !== lastDataHash;
+        lastDataHash = dataHash;
+
+        const s5g = data.signal['5g'];
+        const s4g = data.signal['4g'];
+
+        // Always update charts (shows flat line when stale)
+        updateMetric('5g-sinr', s5g.sinr, 'sinr');
+        updateMetric('5g-rsrp', s5g.rsrp, 'rsrp');
+        updateMetric('5g-rsrq', s5g.rsrq, 'rsrq');
+        updateMetric('5g-rssi', s5g.rssi ?? (s5g.rsrp + 10), 'rssi');
+
+        updateMetric('4g-sinr', s4g.sinr, 'sinr');
+        updateMetric('4g-rsrp', s4g.rsrp, 'rsrp');
+        updateMetric('4g-rsrq', s4g.rsrq, 'rsrq');
+        updateMetric('4g-rssi', s4g.rssi ?? (s4g.rsrp + 10), 'rssi');
+
+        document.getElementById('5g-band').textContent = s5g.bands.join('/');
+        document.getElementById('4g-band').textContent = s4g.bands.join('/');
+
+        // Connection info
+        const towerId = s5g.gNBID || s4g.eNBID;
+        const towerLink = document.getElementById('tower-id');
+        towerLink.textContent = towerId;
+        towerLink.href = `https://www.cellmapper.net/map?MCC=310&MNC=260&type=NR&latitude=37.7&longitude=-122.4&zoom=14&showTowers=true`;
+
+        document.getElementById('cell-id').textContent = s5g.cid;
+        document.getElementById('uptime').textContent = formatUptime(data.time.upTime);
+        document.getElementById('reg-status').textContent = data.signal.generic.registration;
+
+        // Gateway stats
+        const errRate = stats.error_count > 0
+          ? `${stats.error_count} (${Math.round(stats.error_count / (stats.success_count + stats.error_count) * 100)}%)`
+          : '0';
+        document.getElementById('gw-errors').textContent = errRate;
+        document.getElementById('gw-errors').style.color = stats.error_count > 0 ? 'var(--bad)' : 'var(--good)';
+
+        // Device info
+        document.getElementById('device-info').textContent = `${data.device.name} · v${data.device.softwareVersion}`;
+
+        // Show data freshness
+        const ageMs = parseInt(dataAge) || 0;
+        const freshness = isNewData ? '●' : '○';
+        const ageStr = ageMs > 1000 ? `${(ageMs/1000).toFixed(1)}s` : `${ageMs}ms`;
+        document.getElementById('last-update').textContent = `${freshness} ${ageStr} ago`;
+        document.getElementById('last-update').style.color = isNewData ? 'var(--good)' : 'var(--text-dim)';
+
+        // Commit bar update every SAMPLES_PER_BAR samples
+        sampleCounter++;
+        if (sampleCounter >= SAMPLES_PER_BAR) {
+          sampleCounter = 0;
+          commitBarUpdate();
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+        document.getElementById('last-update').textContent = 'ERR';
+        document.getElementById('last-update').style.color = 'var(--bad)';
+      }
+    }
+
+    // Batch chart updates with requestAnimationFrame
+    let pendingChartUpdates = [];
+    let rafScheduled = false;
+
+    function scheduleChartUpdate(chartId, data, type) {
+      pendingChartUpdates.push({ chartId, data, type });
+      if (!rafScheduled) {
+        rafScheduled = true;
+        requestAnimationFrame(() => {
+          pendingChartUpdates.forEach(({ chartId, data, type }) => {
+            updateChart(chartId, data, type);
+          });
+          pendingChartUpdates = [];
+          rafScheduled = false;
+        });
+      }
+    }
+
+    // Initialize dynamic axis labels based on CHART_DURATION_SEC
+    function initAxisLabels() {
+      const axes = document.querySelectorAll('.chart-axis');
+      const midpoint = Math.round(CHART_DURATION_SEC / 2);
+      axes.forEach(axis => {
+        axis.innerHTML = `<span>${CHART_DURATION_SEC}s</span><span>${midpoint}s</span><span>now</span>`;
+      });
+    }
+
+    // Start polling
+    console.log('Starting polling at', REFRESH_INTERVAL, 'ms,', SAMPLES_PER_BAR, 'samples per bar');
+    initCharts();
+    initAxisLabels();
+    fetchData();
+    const pollInterval = setInterval(fetchData, REFRESH_INTERVAL);
+
+    // Hot reload listener
+    const reloadSource = new EventSource('/api/reload-check');
+    reloadSource.onmessage = (e) => {
+      if (e.data === 'reload') {
+        console.log('[HOT RELOAD] Reloading...');
+        location.reload();
+      }
+    };
+    reloadSource.onerror = () => console.log('SSE connection error');
+
+    // Speed Test functionality
+    let speedTestRunning = false;
+
+    async function runSpeedTest() {
+      if (speedTestRunning) return;
+
+      const btn = document.getElementById('speedtest-btn');
+      const statusBadge = document.getElementById('speedtest-status');
+      const resultsDiv = document.getElementById('speedtest-results');
+      const errorDiv = document.getElementById('speedtest-error');
+
+      // Update UI to show running state
+      speedTestRunning = true;
+      btn.disabled = true;
+      btn.classList.add('running');
+      btn.textContent = 'Testing... (30-60s)';
+      statusBadge.textContent = 'Running';
+      statusBadge.style.color = 'var(--ok)';
+      errorDiv.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/speedtest');
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          // Show results
+          resultsDiv.style.display = 'block';
+
+          // Update main metrics
+          document.getElementById('speedtest-download').textContent = result.download_mbps;
+          document.getElementById('speedtest-upload').textContent = result.upload_mbps;
+          document.getElementById('speedtest-ping').textContent = result.ping_ms + ' ms';
+          document.getElementById('speedtest-jitter').textContent = result.jitter_ms ? result.jitter_ms + ' ms' : 'N/A';
+
+          // Server info
+          const serverName = result.server?.name || result.server?.sponsor || 'Unknown';
+          document.getElementById('speedtest-server').textContent = serverName.substring(0, 15);
+
+          // Color-code download speed
+          const dlEl = document.getElementById('speedtest-download');
+          if (result.download_mbps >= 100) {
+            dlEl.style.color = 'var(--good)';
+          } else if (result.download_mbps >= 25) {
+            dlEl.style.color = 'var(--ok)';
+          } else {
+            dlEl.style.color = 'var(--bad)';
+          }
+
+          // Color-code upload speed
+          const ulEl = document.getElementById('speedtest-upload');
+          if (result.upload_mbps >= 20) {
+            ulEl.style.color = 'var(--good)';
+          } else if (result.upload_mbps >= 5) {
+            ulEl.style.color = 'var(--ok)';
+          } else {
+            ulEl.style.color = 'var(--bad)';
+          }
+
+          // Signal info at time of test
+          if (result.signal_at_test) {
+            const sig = result.signal_at_test;
+            const signalDiv = document.getElementById('speedtest-signal-info');
+            let signalHtml = '<div class="speedtest-signal-title">Signal at Test Time</div>';
+
+            if (sig['5g'] && sig['5g'].sinr !== null) {
+              signalHtml += `5G: SINR ${sig['5g'].sinr}dB, RSRP ${sig['5g'].rsrp}dBm`;
+              if (sig['5g'].bands && sig['5g'].bands.length > 0) {
+                signalHtml += ` (${sig['5g'].bands.join('/')})`;
+              }
+            }
+            if (sig['4g'] && sig['4g'].sinr !== null) {
+              if (sig['5g'] && sig['5g'].sinr !== null) signalHtml += '<br>';
+              signalHtml += `4G: SINR ${sig['4g'].sinr}dB, RSRP ${sig['4g'].rsrp}dBm`;
+              if (sig['4g'].bands && sig['4g'].bands.length > 0) {
+                signalHtml += ` (${sig['4g'].bands.join('/')})`;
+              }
+            }
+            signalDiv.innerHTML = signalHtml;
+          }
+
+          statusBadge.textContent = 'Complete';
+          statusBadge.style.color = 'var(--good)';
+
+          // Refresh history
+          loadSpeedTestHistory();
+
+        } else if (result.status === 'busy') {
+          errorDiv.textContent = 'A speed test is already running. Please wait.';
+          errorDiv.style.display = 'block';
+          statusBadge.textContent = 'Busy';
+          statusBadge.style.color = 'var(--ok)';
+        } else {
+          // Error
+          errorDiv.innerHTML = result.error || 'Speed test failed';
+          if (result.install_instructions) {
+            errorDiv.innerHTML += '<br><br>Install with: <code>' + result.install_instructions['speedtest-cli'] + '</code>';
+          }
+          errorDiv.style.display = 'block';
+          statusBadge.textContent = 'Error';
+          statusBadge.style.color = 'var(--bad)';
+        }
+      } catch (err) {
+        console.error('Speed test error:', err);
+        errorDiv.textContent = 'Failed to run speed test: ' + err.message;
+        errorDiv.style.display = 'block';
+        statusBadge.textContent = 'Error';
+        statusBadge.style.color = 'var(--bad)';
+      } finally {
+        speedTestRunning = false;
+        btn.disabled = false;
+        btn.classList.remove('running');
+        btn.textContent = 'Run Speed Test';
+      }
+    }
+
+    async function loadSpeedTestHistory() {
+      try {
+        const response = await fetch('/api/speedtest/history?limit=5');
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+          const container = document.getElementById('speedtest-history-container');
+          const historyDiv = document.getElementById('speedtest-history');
+          container.style.display = 'block';
+
+          historyDiv.innerHTML = data.results.map(result => {
+            const date = new Date(result.timestamp);
+            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+            return `
+              <div class="speedtest-history-item">
+                <span class="speedtest-history-time">${dateStr} ${timeStr}</span>
+                <span class="speedtest-history-speeds">
+                  <span style="color: var(--good)">${result.download_mbps} Mbps</span>
+                  <span style="color: var(--text-dim)">${result.upload_mbps} Mbps</span>
+                  <span style="color: var(--text-dim)">${result.ping_ms}ms</span>
+                </span>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load speed test history:', err);
+      }
+    }
+
+    // Load history on page load
+    loadSpeedTestHistory();
+
+    // Advanced Metrics polling
+    async function fetchAdvancedMetrics() {
+      try {
+        const response = await fetch('/api/advanced');
+        if (!response.ok) return;
+        const data = await response.json();
+
+        // Connection mode badge
+        const modeEl = document.getElementById('conn-mode');
+        modeEl.textContent = data.connectionMode;
+        if (data.connectionMode === 'NSA') {
+          modeEl.style.color = 'var(--accent)';
+        } else if (data.connectionMode === 'SA') {
+          modeEl.style.color = 'var(--good)';
+        } else if (data.connectionMode === 'LTE') {
+          modeEl.style.color = 'var(--ok)';
+        } else {
+          modeEl.style.color = 'var(--bad)';
+        }
+
+        // 5G capacity and band info
+        if (data['5g']) {
+          const cap5g = data['5g'].capacity;
+          const capEl = document.getElementById('adv-5g-capacity');
+          if (cap5g) {
+            capEl.textContent = cap5g.tier;
+            capEl.style.color = cap5g.tier === 'Excellent' || cap5g.tier === 'Good' ? 'var(--good)' :
+                                cap5g.tier === 'Fair' ? 'var(--ok)' : 'var(--bad)';
+          }
+
+          // Band info
+          const bandEl = document.getElementById('adv-5g-band');
+          if (data['5g'].bandDetails && data['5g'].bandDetails.length > 0) {
+            const bd = data['5g'].bandDetails[0];
+            bandEl.innerHTML = `${bd.band} <span style="color:var(--text-dim);font-size:10px">${bd.freq}</span>`;
+          }
+        }
+
+        // 4G capacity and band info
+        if (data['4g']) {
+          const cap4g = data['4g'].capacity;
+          const capEl = document.getElementById('adv-4g-capacity');
+          if (cap4g) {
+            capEl.textContent = cap4g.tier;
+            capEl.style.color = cap4g.tier === 'Excellent' || cap4g.tier === 'Good' ? 'var(--good)' :
+                                cap4g.tier === 'Fair' ? 'var(--ok)' : 'var(--bad)';
+          }
+
+          const bandEl = document.getElementById('adv-4g-band');
+          if (data['4g'].bandDetails && data['4g'].bandDetails.length > 0) {
+            const bd = data['4g'].bandDetails[0];
+            bandEl.innerHTML = `${bd.band} <span style="color:var(--text-dim);font-size:10px">${bd.freq}</span>`;
+          }
+        }
+      } catch (err) {
+        console.error('Advanced metrics error:', err);
+      }
+    }
+
+    // Poll advanced metrics every 2 seconds (less frequent than signal data)
+    fetchAdvancedMetrics();
+    setInterval(fetchAdvancedMetrics, 2000);
+  </script>
+</body>
+</html>

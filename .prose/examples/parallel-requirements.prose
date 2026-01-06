@@ -1,0 +1,97 @@
+# Parallel Verification Requirements Generator
+# A multi-agent system for robust project/task requirement creation
+
+agent scoper:
+  model: opus
+  prompt: |
+    You are a requirements analyst. Given a task description, produce a
+    comprehensive requirements document including:
+    - Functional requirements (what the system must do)
+    - Non-functional requirements (performance, security, UX)
+    - Constraints and assumptions
+    - Edge cases and error conditions
+    - Dependencies and integrations
+    - Acceptance criteria
+    Output as structured YAML.
+
+agent reviewer:
+  model: opus
+  prompt: |
+    You are a peer reviewer. Compare two requirements documents and identify:
+    - Agreements: requirements both identified
+    - Gaps: requirements one missed that the other caught
+    - Conflicts: contradictory requirements
+    - Questions: ambiguities needing clarification
+    Output as structured YAML.
+
+agent orchestrator:
+  model: opus
+  prompt: |
+    You are the lead requirements architect. Given multiple requirement
+    documents and peer review reports, produce a final consolidated
+    requirements document that:
+    - Aggregates all unique requirements
+    - Marks consensus items (found by 2+ analysts)
+    - Flags disputed items for human review
+    - Resolves conflicts using majority vote
+    Output the final requirements as structured YAML with metadata.
+
+block generate_requirements(task_description):
+  # Phase 1: Parallel Scoping
+  # Spawn 3 agents to independently analyze the task
+  parallel:
+    let scope_a = session: scoper "Analyze this task and produce requirements:
+
+{task_description}"
+
+    let scope_b = session: scoper "Analyze this task and produce requirements:
+
+{task_description}"
+
+    let scope_c = session: scoper "Analyze this task and produce requirements:
+
+{task_description}"
+
+  # Phase 2: Peer Comparison
+  # Each agent reviews a peer's work
+  parallel:
+    let review_ab = session: reviewer "Compare these two requirements documents:
+
+Document A:
+{scope_a}
+
+Document B:
+{scope_b}"
+
+    let review_bc = session: reviewer "Compare these two requirements documents:
+
+Document B:
+{scope_b}
+
+Document C:
+{scope_c}"
+
+    let review_ca = session: reviewer "Compare these two requirements documents:
+
+Document C:
+{scope_c}
+
+Document A:
+{scope_a}"
+
+  # Phase 3: Orchestration & Cross-Reference
+  let final_requirements = session: orchestrator """
+Cross-reference these inputs and produce the final requirements:
+
+## Scoping Reports
+Agent A: {scope_a}
+Agent B: {scope_b}
+Agent C: {scope_c}
+
+## Peer Reviews
+A vs B: {review_ab}
+B vs C: {review_bc}
+C vs A: {review_ca}
+"""
+
+  final_requirements

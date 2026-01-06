@@ -1,0 +1,24 @@
+# Counter Component
+# A simple interactive counter to demonstrate OpenProse basics
+
+## Requirements
+
+Create a counter component with the following behavior:
+
+1. Display the current count value, starting at 0
+2. Show an "Increment" button that adds 1 to the count
+3. Show a "Decrement" button that subtracts 1 from the count
+4. Show a "Reset" button that sets the count back to 0
+5. The count should never go below 0
+
+## Styling
+
+- Center the component on the page
+- Use a large font for the count display
+- Space the buttons evenly below the count
+
+## Tech Stack
+
+- Use React with TypeScript
+- Use Base UI for button components
+- Use Effect for state management
