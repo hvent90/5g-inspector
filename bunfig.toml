@@ -1,0 +1,13 @@
+# Bun configuration for tmobile-dashboard monorepo
+
+[install]
+# Use exact versions for reproducible builds
+exact = true
+
+[install.lockfile]
+# Save the lockfile
+save = true
+
+[run]
+# Silence script output warnings
+silent = false

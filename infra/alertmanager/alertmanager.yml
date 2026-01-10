@@ -1,0 +1,145 @@
+# Alertmanager Configuration for T-Mobile Dashboard
+# Routes alerts to appropriate receivers based on severity and category
+
+global:
+  # How long to wait before sending a notification again if it's still firing
+  resolve_timeout: 5m
+
+# Templates for notification messages
+templates: []
+
+# The root route must match all alerts
+route:
+  # Group alerts by these labels
+  group_by: ['alertname', 'category', 'severity']
+
+  # Wait before sending the first notification for a new group
+  group_wait: 30s
+
+  # Wait before sending notification about new alerts in an existing group
+  group_interval: 5m
+
+  # How long to wait before resending a notification
+  repeat_interval: 4h
+
+  # Default receiver
+  receiver: 'default-receiver'
+
+  # Child routes for different alert categories
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    # Signal quality alerts
+    - match:
+        category: signal_quality
+      receiver: 'signal-alerts'
+      group_by: ['alertname', 'model']
+
+    # Connection stability alerts
+    - match:
+        category: connection_stability
+      receiver: 'connection-alerts'
+      group_by: ['alertname']
+
+    # Connection status alerts (down/unstable)
+    - match:
+        category: connection_status
+      receiver: 'critical-alerts'
+      group_wait: 10s
+
+    # Informational alerts (tower changes, etc)
+    - match:
+        severity: info
+      receiver: 'info-receiver'
+      group_wait: 1m
+      repeat_interval: 24h
+
+# Inhibition rules to prevent notification spam
+inhibit_rules:
+  # Critical RSRP inhibits warning RSRP
+  - source_match:
+      alertname: 'TMobileRSRPCritical'
+    target_match:
+      alertname: 'TMobileRSRPWarning'
+    equal: ['model']
+
+  # Critical SINR inhibits warning SINR
+  - source_match:
+      alertname: 'TMobileSINRCritical'
+    target_match:
+      alertname: 'TMobileSINRDegraded'
+    equal: ['model']
+
+  # Critical RSRQ inhibits warning RSRQ
+  - source_match:
+      alertname: 'TMobileRSRQCritical'
+    target_match:
+      alertname: 'TMobileRSRQDegraded'
+    equal: ['model']
+
+  # Connection down inhibits all other alerts
+  - source_match:
+      alertname: 'TMobileConnectionDown'
+    target_match_re:
+      alertname: 'TMobile.*'
+    equal: []
+
+  # Excessive handoffs inhibits frequent handoffs
+  - source_match:
+      alertname: 'TMobileExcessiveTowerHandoffs'
+    target_match:
+      alertname: 'TMobileFrequentTowerHandoffs'
+    equal: ['model']
+
+# Receivers define how alerts are delivered
+receivers:
+  # Default receiver - logs alerts
+  - name: 'default-receiver'
+    # No notification config - alerts will only appear in Alertmanager UI
+    # and can be queried via the API
+
+  # Critical alerts receiver
+  # Configure with actual notification endpoints (email, Slack, PagerDuty, etc.)
+  - name: 'critical-alerts'
+    # Webhook receiver - can integrate with any HTTP endpoint
+    # Uncomment and configure as needed:
+    # webhook_configs:
+    #   - url: 'http://localhost:5001/webhook/critical'
+    #     send_resolved: true
+
+    # Email configuration (uncomment and configure):
+    # email_configs:
+    #   - to: 'alerts@example.com'
+    #     from: 'tmobile-alerts@example.com'
+    #     smarthost: 'smtp.example.com:587'
+    #     auth_username: 'alerts@example.com'
+    #     auth_password: 'password'
+    #     send_resolved: true
+    #     headers:
+    #       Subject: '[CRITICAL] T-Mobile Gateway Alert'
+
+    # Slack configuration (uncomment and configure):
+    # slack_configs:
+    #   - api_url: 'https://hooks.slack.com/services/XXX/YYY/ZZZ'
+    #     channel: '#network-alerts'
+    #     send_resolved: true
+    #     title: '{{ template "slack.title" . }}'
+    #     text: '{{ template "slack.text" . }}'
+
+  # Signal quality alerts
+  - name: 'signal-alerts'
+    # Configure notification endpoints for signal alerts
+
+  # Connection stability alerts
+  - name: 'connection-alerts'
+    # Configure notification endpoints for connection alerts
+
+  # Informational alerts (lower priority)
+  - name: 'info-receiver'
+    # Usually just logged, not actively notified

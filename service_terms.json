@@ -1,0 +1,70 @@
+{
+  "plan_name": "T-Mobile 5G Home Internet - Rely Plan",
+  "monthly_cost": 50,
+  "advertised_download_min": 133,
+  "advertised_download_max": 415,
+  "advertised_upload_min": 12,
+  "advertised_upload_max": 55,
+  "advertised_latency_min": 16,
+  "advertised_latency_max": 28,
+  "service_start_date": null,
+  "service_address": "",
+  "account_number": "",
+  "contract_terms": "Month-to-month service, no annual contract required. Price may change. Service subject to T-Mobile Home Internet Terms and Conditions.",
+  "deprioritization_policy": "As of May 8, 2024, T-Mobile Home Internet customers who exceed 1.2TB of data usage in a billing cycle are designated as 'Internet Heavy Data Users' and will be prioritized last on the network for the remainder of that billing cycle. This is not a hard throttle or data cap, but during periods of network congestion, deprioritized users may experience significantly slower speeds. Customers receive notifications when approaching and reaching the 1.2TB threshold. This policy applies to all Home Internet plans regardless of signup date.",
+  "data_cap_policy": "No hard data cap. T-Mobile Home Internet is marketed as 'unlimited' data. However, the 1.2TB Fair Usage threshold triggers network deprioritization (not throttling). After 1.2TB, data is still unlimited but at lowest network priority during congested periods.",
+  "throttling_terms": "T-Mobile does not impose hard speed throttling on Home Internet. Instead, network management uses prioritization: Home Internet customers generally receive the same network prioritization as Mobile Wireless Heavy Data Users. During congestion, prioritized traffic takes precedence. After exceeding 1.2TB monthly usage, customers are moved to lowest priority tier which may result in severely degraded speeds during peak congestion periods.",
+  "typical_language": "Speeds advertised as 'typical' download speeds of 133-415 Mbps. T-Mobile states: '25% of customers see speeds below and 25% see speeds above this range.' Speeds described as varying 'due to factors affecting cellular networks.' Premium plans (Amplified, All-In) advertise typical speeds of 170-498 Mbps with Wi-Fi 7 gateway.",
+  "promotional_claims": "T-Mobile advertises Home Internet as: 'Reliable 5G home internet', 'No annual contracts', 'No data caps', 'Price lock guarantee available on select plans'. Marketing emphasizes average speeds around 245-250 Mbps.",
+  "website_screenshot_date": null,
+  "screenshot_url": "",
+  "terms_of_service_date": "2024-05-08",
+  "notes": "User-reported advertised speeds (133-415 Mbps download, 12-55 Mbps upload, 16-28ms latency) are consistent with T-Mobile's official disclosures for the Rely plan tier. These values represent the 'typical' range that 50% of customers experience. Real-world testing by independent reviewers shows average latencies of 40-60ms are common, higher than advertised 16-28ms range. Deprioritization at 1.2TB threshold applies to all customers as of May 2024 policy update.",
+  "updated_at": "2026-01-06T00:00:00.000Z",
+  "official_sources": {
+    "network_management_disclosure": "https://www.t-mobile.com/home-internet/policies/internet-service/network-management-practices",
+    "speed_performance_metrics": "https://www.t-mobile.com/home-internet/policies/internet-service/network-speed-performance-metrics",
+    "internet_service_policies": "https://www.t-mobile.com/responsibility/consumer-info/policies/internet-service",
+    "home_internet_plans": "https://www.t-mobile.com/home-internet/plans",
+    "home_internet_faq": "https://www.t-mobile.com/home-internet/faq"
+  },
+  "fcc_relevant_disclosures": {
+    "speed_disclosure_method": "T-Mobile uses 'typical' speed ranges where 50% of customers fall within the stated range (25% below, 25% above)",
+    "prioritization_disclosure": "Home Internet receives same priority as mobile Heavy Data Users; lower than standard mobile plans",
+    "congestion_management": "During periods of congestion, all traffic is managed; Home Internet deprioritized relative to mobile wireless",
+    "latency_disclaimer": "Latency varies based on network conditions; real-world latency often exceeds advertised typical range",
+    "deprioritization_trigger": "1.2TB monthly usage triggers lowest priority status for remainder of billing cycle"
+  },
+  "plan_tiers": {
+    "rely": {
+      "name": "Rely",
+      "price": 50,
+      "download_typical_min": 133,
+      "download_typical_max": 415,
+      "upload_typical_min": 12,
+      "upload_typical_max": 55,
+      "gateway": "Standard 5G Gateway",
+      "notes": "Basic tier, standard prioritization"
+    },
+    "amplified": {
+      "name": "Amplified",
+      "price": 60,
+      "download_typical_min": 170,
+      "download_typical_max": 498,
+      "upload_typical_min": 12,
+      "upload_typical_max": 55,
+      "gateway": "Wi-Fi 7 Gateway",
+      "notes": "Approximately 30% faster than Rely on average"
+    },
+    "all_in": {
+      "name": "All-In",
+      "price": 70,
+      "download_typical_min": 170,
+      "download_typical_max": 498,
+      "upload_typical_min": 12,
+      "upload_typical_max": 55,
+      "gateway": "Wi-Fi 7 Gateway",
+      "notes": "Includes streaming perks (Netflix, Apple TV+)"
+    }
+  }
+}

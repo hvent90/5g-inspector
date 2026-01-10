@@ -7,6 +7,18 @@ out/
 out-tsc/
 *.tsbuildinfo
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+
 # IDE
 .idea/
 .vscode/
@@ -50,3 +62,13 @@ apps/api/data/*.db-*
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# Agent state (beads, prose)
+.beads/
+.prose/
+
+# Local data files
+signal_history.db
+alert_history.json
+speedtest_history.json
+nul

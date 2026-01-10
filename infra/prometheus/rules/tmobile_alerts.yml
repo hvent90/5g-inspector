@@ -1,0 +1,263 @@
+# Prometheus Alerting Rules for T-Mobile Gateway Signal Monitoring
+# These rules detect signal degradation and connection issues
+
+groups:
+  - name: tmobile_signal_alerts
+    interval: 15s
+    rules:
+      # ============================================
+      # RSRP Alerts (Reference Signal Received Power)
+      # Good: > -80 dBm, Fair: -80 to -100, Poor: -100 to -110
+      # Warning: < -110 dBm, Critical: < -120 dBm
+      # ============================================
+      - alert: TMobileRSRPWarning
+        expr: tmobile_signal_rsrp < -110
+        for: 2m
+        labels:
+          severity: warning
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile RSRP signal degradation warning"
+          description: |
+            RSRP is {{ $value | printf "%.1f" }} dBm (threshold: -110 dBm).
+            Signal strength is poor and may cause reduced throughput.
+            Gateway model: {{ $labels.model }}
+          runbook_url: https://github.com/tmobile-dashboard/docs/runbooks/rsrp-degradation.md
+
+      - alert: TMobileRSRPCritical
+        expr: tmobile_signal_rsrp < -120
+        for: 1m
+        labels:
+          severity: critical
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile RSRP signal critically low"
+          description: |
+            RSRP is {{ $value | printf "%.1f" }} dBm (threshold: -120 dBm).
+            Signal strength is critically low - connection may be unstable or disconnecting.
+            Gateway model: {{ $labels.model }}
+          runbook_url: https://github.com/tmobile-dashboard/docs/runbooks/rsrp-degradation.md
+
+      # ============================================
+      # SINR Alerts (Signal to Interference Noise Ratio)
+      # Excellent: > 20 dB, Good: 13-20, Fair: 0-13, Poor: < 0
+      # ============================================
+      - alert: TMobileSINRDegraded
+        expr: tmobile_signal_sinr < 0
+        for: 2m
+        labels:
+          severity: warning
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile SINR quality degraded"
+          description: |
+            SINR is {{ $value | printf "%.1f" }} dB (threshold: 0 dB).
+            High interference or noise is affecting signal quality.
+            This typically results in reduced data speeds.
+            Gateway model: {{ $labels.model }}
+
+      - alert: TMobileSINRCritical
+        expr: tmobile_signal_sinr < -5
+        for: 1m
+        labels:
+          severity: critical
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile SINR critically low"
+          description: |
+            SINR is {{ $value | printf "%.1f" }} dB (threshold: -5 dB).
+            Severe interference is causing connection instability.
+            Gateway model: {{ $labels.model }}
+
+      # ============================================
+      # RSRQ Alerts (Reference Signal Received Quality)
+      # Good: > -10 dB, Fair: -10 to -15, Poor: < -15
+      # ============================================
+      - alert: TMobileRSRQDegraded
+        expr: tmobile_signal_rsrq < -15
+        for: 2m
+        labels:
+          severity: warning
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile RSRQ quality degraded"
+          description: |
+            RSRQ is {{ $value | printf "%.1f" }} dB (threshold: -15 dB).
+            Signal quality is poor relative to received power.
+            Gateway model: {{ $labels.model }}
+
+      - alert: TMobileRSRQCritical
+        expr: tmobile_signal_rsrq < -19
+        for: 1m
+        labels:
+          severity: critical
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile RSRQ critically low"
+          description: |
+            RSRQ is {{ $value | printf "%.1f" }} dB (threshold: -19 dB).
+            Signal quality is severely degraded.
+            Gateway model: {{ $labels.model }}
+
+  - name: tmobile_connection_alerts
+    interval: 30s
+    rules:
+      # ============================================
+      # Tower Handoff Detection
+      # Alert when PCI (Physical Cell ID) changes frequently
+      # ============================================
+      - alert: TMobileFrequentTowerHandoffs
+        expr: changes(tmobile_cell_pci[15m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          category: connection_stability
+        annotations:
+          summary: "Frequent T-Mobile tower handoffs detected"
+          description: |
+            PCI has changed {{ $value | printf "%.0f" }} times in the last 15 minutes.
+            Frequent handoffs indicate the gateway is struggling to maintain a stable connection.
+            This may cause service interruptions and reduced speeds.
+            Gateway model: {{ $labels.model }}
+
+      - alert: TMobileExcessiveTowerHandoffs
+        expr: changes(tmobile_cell_pci[15m]) > 6
+        for: 2m
+        labels:
+          severity: critical
+          category: connection_stability
+        annotations:
+          summary: "Excessive T-Mobile tower handoffs"
+          description: |
+            PCI has changed {{ $value | printf "%.0f" }} times in the last 15 minutes.
+            The gateway is rapidly switching between towers, indicating severe signal issues.
+            Gateway model: {{ $labels.model }}
+
+      # ============================================
+      # eNodeB Changes (Cell Tower Changes)
+      # ============================================
+      - alert: TMobileTowerChange
+        expr: changes(tmobile_cell_enb[1h]) > 0
+        for: 0s
+        labels:
+          severity: info
+          category: connection_info
+        annotations:
+          summary: "T-Mobile tower change detected"
+          description: |
+            eNodeB ID has changed. Current eNB: {{ $value | printf "%.0f" }}.
+            The gateway has connected to a different cell tower.
+            Gateway model: {{ $labels.model }}
+
+      # ============================================
+      # Connection Drops / Scrape Failures
+      # ============================================
+      - alert: TMobileConnectionDown
+        expr: tmobile_gateway_scrape_success == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: connection_status
+        annotations:
+          summary: "T-Mobile gateway connection failed"
+          description: |
+            Unable to retrieve metrics from the T-Mobile gateway.
+            The gateway may be offline or unreachable.
+            Check gateway power and network connectivity.
+
+      - alert: TMobileConnectionUnstable
+        expr: avg_over_time(tmobile_gateway_scrape_success[5m]) < 0.9
+        for: 2m
+        labels:
+          severity: warning
+          category: connection_status
+        annotations:
+          summary: "T-Mobile gateway connection unstable"
+          description: |
+            Gateway scrape success rate is {{ $value | printf "%.1f" }}% over the last 5 minutes.
+            Some metrics collection attempts are failing.
+
+      # ============================================
+      # Data Staleness Detection
+      # ============================================
+      - alert: TMobileDataStale
+        expr: tmobile_gateway_seconds_since_success > 30
+        for: 0s
+        labels:
+          severity: warning
+          category: connection_status
+        annotations:
+          summary: "T-Mobile gateway data is stale"
+          description: |
+            No successful data collection for {{ $value | printf "%.0f" }} seconds.
+            Gateway may be unreachable or experiencing issues.
+
+      - alert: TMobileExtendedOutage
+        expr: tmobile_gateway_seconds_since_success > 300
+        for: 0s
+        labels:
+          severity: critical
+          category: connection_status
+        annotations:
+          summary: "T-Mobile gateway extended outage"
+          description: |
+            No successful data collection for {{ $value | printf "%.0f" }} seconds.
+            Gateway has been unreachable for over 5 minutes.
+
+      # ============================================
+      # Band Changes (May indicate congestion avoidance)
+      # ============================================
+      - alert: TMobileFrequentBandChanges
+        expr: changes(tmobile_cell_band[30m]) > 4
+        for: 5m
+        labels:
+          severity: warning
+          category: connection_stability
+        annotations:
+          summary: "Frequent T-Mobile band switching"
+          description: |
+            Band has changed {{ $value | printf "%.0f" }} times in the last 30 minutes.
+            Frequent band switching may indicate network congestion or signal instability.
+            Current band: {{ $labels.band }}
+            Gateway model: {{ $labels.model }}
+
+  - name: tmobile_performance_alerts
+    interval: 60s
+    rules:
+      # ============================================
+      # Combined Signal Quality Index
+      # Alert when multiple metrics indicate poor conditions
+      # ============================================
+      - alert: TMobileOverallSignalPoor
+        expr: |
+          (tmobile_signal_rsrp < -105) and
+          (tmobile_signal_sinr < 5) and
+          (tmobile_signal_rsrq < -12)
+        for: 5m
+        labels:
+          severity: warning
+          category: signal_quality
+        annotations:
+          summary: "T-Mobile overall signal quality poor"
+          description: |
+            Multiple signal quality metrics are degraded:
+            - RSRP: {{ with query "tmobile_signal_rsrp" }}{{ . | first | value | printf "%.1f" }}{{ end }} dBm
+            - SINR: {{ with query "tmobile_signal_sinr" }}{{ . | first | value | printf "%.1f" }}{{ end }} dB
+            - RSRQ: {{ with query "tmobile_signal_rsrq" }}{{ . | first | value | printf "%.1f" }}{{ end }} dB
+            Consider relocating gateway or adjusting antenna position.
+            Gateway model: {{ $labels.model }}
+
+      # ============================================
+      # Slow Scrape Duration (Gateway Responsiveness)
+      # ============================================
+      - alert: TMobileGatewaySlowResponse
+        expr: tmobile_scrape_duration_seconds > 5
+        for: 2m
+        labels:
+          severity: warning
+          category: gateway_health
+        annotations:
+          summary: "T-Mobile gateway responding slowly"
+          description: |
+            Gateway metric collection is taking {{ $value | printf "%.1f" }} seconds.
+            This may indicate gateway overload or network issues.

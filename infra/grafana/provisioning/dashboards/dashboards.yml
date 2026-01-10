@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'T-Mobile Dashboard'
+    orgId: 1
+    folder: 'T-Mobile'
+    folderUid: 'tmobile'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
