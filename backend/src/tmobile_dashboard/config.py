@@ -20,6 +20,11 @@ class GatewaySettings(BaseSettings):
     # Circuit breaker settings
     failure_threshold: int = 3
     recovery_timeout_seconds: int = 30
+    # Signal quality drop detection (Priority 4)
+    sinr_drop_threshold_db: float = Field(
+        default=5.0,
+        description="SINR drop threshold in dB to trigger event detection",
+    )
 
 
 class DatabaseSettings(BaseSettings):
@@ -97,6 +102,26 @@ class LokiSettings(BaseSettings):
     push_timeout_seconds: float = 5.0
 
 
+class PingMonitorSettings(BaseSettings):
+    """Continuous ping monitor settings for short outage detection."""
+
+    model_config = SettingsConfigDict(env_prefix="PING_MONITOR_")
+
+    enabled: bool = True
+    interval_seconds: int = Field(
+        default=30,
+        description="Interval between ping cycles in seconds",
+    )
+    ping_timeout_seconds: int = Field(
+        default=2,
+        description="Timeout for each ping attempt",
+    )
+    targets: list[str] = Field(
+        default=["8.8.8.8", "1.1.1.1", "208.54.0.1"],
+        description="Ping targets for continuous monitoring",
+    )
+
+
 class SpeedtestSettings(BaseSettings):
     """Speedtest configuration."""
 
@@ -142,6 +167,7 @@ class Settings(BaseSettings):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     speedtest: SpeedtestSettings = Field(default_factory=SpeedtestSettings)
     loki: LokiSettings = Field(default_factory=LokiSettings)
+    ping_monitor: PingMonitorSettings = Field(default_factory=PingMonitorSettings)
 
     # Application settings
     debug: bool = False

@@ -491,3 +491,241 @@ class NetworkQualityRepository:
             if row_dict.get("signal_snapshot"):
                 row_dict["signal_snapshot"] = json.loads(row_dict["signal_snapshot"])
             return row_dict
+
+
+class GatewayPollRepository:
+    """Repository for gateway poll events (every failure, no retention policy)."""
+
+    def __init__(self, db: DatabaseConnection | None = None):
+        self.db = db or get_db()
+
+    async def insert_failure(
+        self,
+        error_type: str,
+        error_message: str,
+        circuit_state: str,
+        response_time_ms: float | None = None,
+        signal_snapshot: dict | None = None,
+    ) -> int:
+        """Insert a gateway poll failure. Returns the row ID."""
+        from datetime import datetime
+
+        async with self.db.connection() as db:
+            cursor = await db.execute(
+                """
+                INSERT INTO gateway_poll_events (
+                    timestamp, timestamp_unix, success,
+                    error_type, error_message, circuit_state,
+                    response_time_ms, signal_snapshot
+                ) VALUES (?, ?, 0, ?, ?, ?, ?, ?)
+                """,
+                (
+                    datetime.utcnow().isoformat(),
+                    time.time(),
+                    error_type,
+                    error_message,
+                    circuit_state,
+                    response_time_ms,
+                    json.dumps(signal_snapshot) if signal_snapshot else None,
+                ),
+            )
+            await db.commit()
+            return cursor.lastrowid or 0
+
+    async def query(
+        self,
+        duration_hours: int = 24,
+        success_filter: bool | None = None,
+    ) -> list[dict]:
+        """Query gateway poll events."""
+        cutoff = time.time() - (duration_hours * 60 * 60)
+
+        async with self.db.connection() as db:
+            if success_filter is not None:
+                cursor = await db.execute(
+                    """
+                    SELECT * FROM gateway_poll_events
+                    WHERE timestamp_unix >= ? AND success = ?
+                    ORDER BY timestamp_unix DESC
+                    """,
+                    (cutoff, 1 if success_filter else 0),
+                )
+            else:
+                cursor = await db.execute(
+                    """
+                    SELECT * FROM gateway_poll_events
+                    WHERE timestamp_unix >= ?
+                    ORDER BY timestamp_unix DESC
+                    """,
+                    (cutoff,),
+                )
+            rows = await cursor.fetchall()
+
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            if row_dict.get("signal_snapshot"):
+                row_dict["signal_snapshot"] = json.loads(row_dict["signal_snapshot"])
+            result.append(row_dict)
+
+        return result
+
+    async def get_stats(self, duration_hours: int = 24) -> dict:
+        """Get gateway poll statistics."""
+        cutoff = time.time() - (duration_hours * 60 * 60)
+
+        async with self.db.connection() as db:
+            cursor = await db.execute(
+                """
+                SELECT
+                    COUNT(*) as total_events,
+                    SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failures
+                FROM gateway_poll_events
+                WHERE timestamp_unix >= ?
+                """,
+                (cutoff,),
+            )
+            row = await cursor.fetchone()
+
+            # Get error type breakdown
+            cursor = await db.execute(
+                """
+                SELECT error_type, COUNT(*) as count
+                FROM gateway_poll_events
+                WHERE timestamp_unix >= ? AND success = 0
+                GROUP BY error_type
+                """,
+                (cutoff,),
+            )
+            by_error_type = {r["error_type"]: r["count"] for r in await cursor.fetchall()}
+
+        return {
+            "period_hours": duration_hours,
+            "total_events": row["total_events"] if row else 0,
+            "failures": row["failures"] if row else 0,
+            "by_error_type": by_error_type,
+        }
+
+
+class ContinuousPingRepository:
+    """Repository for continuous ping results (30-second monitoring)."""
+
+    def __init__(self, db: DatabaseConnection | None = None):
+        self.db = db or get_db()
+
+    async def insert(
+        self,
+        target_host: str,
+        success: bool,
+        latency_ms: float | None = None,
+        error_type: str | None = None,
+    ) -> int:
+        """Insert a continuous ping result. Returns the row ID."""
+        from datetime import datetime
+
+        async with self.db.connection() as db:
+            cursor = await db.execute(
+                """
+                INSERT INTO continuous_ping (
+                    timestamp, timestamp_unix, target_host,
+                    success, latency_ms, error_type
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    datetime.utcnow().isoformat(),
+                    time.time(),
+                    target_host,
+                    1 if success else 0,
+                    latency_ms,
+                    error_type,
+                ),
+            )
+            await db.commit()
+            return cursor.lastrowid or 0
+
+    async def query(
+        self,
+        duration_minutes: int = 60,
+        target_filter: str | None = None,
+    ) -> list[dict]:
+        """Query continuous ping results."""
+        cutoff = time.time() - (duration_minutes * 60)
+
+        async with self.db.connection() as db:
+            if target_filter:
+                cursor = await db.execute(
+                    """
+                    SELECT * FROM continuous_ping
+                    WHERE timestamp_unix >= ? AND target_host = ?
+                    ORDER BY timestamp_unix DESC
+                    """,
+                    (cutoff, target_filter),
+                )
+            else:
+                cursor = await db.execute(
+                    """
+                    SELECT * FROM continuous_ping
+                    WHERE timestamp_unix >= ?
+                    ORDER BY timestamp_unix DESC
+                    """,
+                    (cutoff,),
+                )
+            rows = await cursor.fetchall()
+
+        return [dict(row) for row in rows]
+
+    async def get_stats(self, duration_minutes: int = 60) -> dict:
+        """Get continuous ping statistics."""
+        cutoff = time.time() - (duration_minutes * 60)
+
+        async with self.db.connection() as db:
+            cursor = await db.execute(
+                """
+                SELECT
+                    COUNT(*) as total_pings,
+                    SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+                    SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as failed,
+                    AVG(CASE WHEN success = 1 THEN latency_ms END) as avg_latency_ms,
+                    MIN(CASE WHEN success = 1 THEN latency_ms END) as min_latency_ms,
+                    MAX(CASE WHEN success = 1 THEN latency_ms END) as max_latency_ms
+                FROM continuous_ping
+                WHERE timestamp_unix >= ?
+                """,
+                (cutoff,),
+            )
+            row = await cursor.fetchone()
+
+            # Get per-target stats
+            cursor = await db.execute(
+                """
+                SELECT
+                    target_host,
+                    COUNT(*) as pings,
+                    SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful,
+                    AVG(CASE WHEN success = 1 THEN latency_ms END) as avg_latency_ms
+                FROM continuous_ping
+                WHERE timestamp_unix >= ?
+                GROUP BY target_host
+                """,
+                (cutoff,),
+            )
+            by_target = {
+                r["target_host"]: {
+                    "pings": r["pings"],
+                    "successful": r["successful"],
+                    "avg_latency_ms": r["avg_latency_ms"],
+                }
+                for r in await cursor.fetchall()
+            }
+
+        return {
+            "period_minutes": duration_minutes,
+            "total_pings": row["total_pings"] if row else 0,
+            "successful": row["successful"] if row else 0,
+            "failed": row["failed"] if row else 0,
+            "success_rate": (row["successful"] / row["total_pings"] * 100) if row and row["total_pings"] > 0 else 0,
+            "avg_latency_ms": row["avg_latency_ms"] if row else None,
+            "min_latency_ms": row["min_latency_ms"] if row else None,
+            "max_latency_ms": row["max_latency_ms"] if row else None,
+            "by_target": by_target,
+        }

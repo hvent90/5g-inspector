@@ -96,6 +96,8 @@ bun run dev:app     # Apps only (skip infra)
 
 **OTLP endpoints:** `localhost:4317` (gRPC) or `localhost:4318` (HTTP)
 
+**RCA Guide:** See `docs/rca-guide.md` for diagnosing network issues using SQLite and Loki queries.
+
 ## Full Stack Scripts
 
 ### Start Stack (with LAN Access)

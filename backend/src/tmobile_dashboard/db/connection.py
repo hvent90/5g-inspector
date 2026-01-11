@@ -126,6 +126,34 @@ class DatabaseConnection:
         # Migration: Add speedtest_active column to existing network_quality tables
         await self._migrate_network_quality_columns(db)
 
+        # Gateway poll events table (every poll failure, NO retention policy per user choice)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS gateway_poll_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                timestamp_unix REAL NOT NULL,
+                success INTEGER NOT NULL,
+                error_type TEXT,
+                error_message TEXT,
+                circuit_state TEXT,
+                response_time_ms REAL,
+                signal_snapshot TEXT
+            )
+        """)
+
+        # Continuous ping results table (for high-frequency 30s monitoring)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS continuous_ping (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                timestamp_unix REAL NOT NULL,
+                target_host TEXT NOT NULL,
+                success INTEGER NOT NULL,
+                latency_ms REAL,
+                error_type TEXT
+            )
+        """)
+
         # Hourly metrics table for congestion analysis
         await db.execute("""
             CREATE TABLE IF NOT EXISTS hourly_metrics (
@@ -176,6 +204,26 @@ class DatabaseConnection:
         await db.execute("""
             CREATE INDEX IF NOT EXISTS idx_speedtest_tool
             ON speedtest_results(tool)
+        """)
+
+        # Indexes for gateway poll events
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_gateway_poll_events_timestamp_unix
+            ON gateway_poll_events(timestamp_unix)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_gateway_poll_events_success
+            ON gateway_poll_events(success)
+        """)
+
+        # Indexes for continuous ping
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_continuous_ping_timestamp_unix
+            ON continuous_ping(timestamp_unix)
+        """)
+        await db.execute("""
+            CREATE INDEX IF NOT EXISTS idx_continuous_ping_target
+            ON continuous_ping(target_host)
         """)
 
     async def _migrate_speedtest_columns(self, db: aiosqlite.Connection) -> None:
@@ -245,7 +293,7 @@ class DatabaseConnection:
             stats = {}
 
             # Table row counts
-            for table in ["signal_history", "disruption_events", "speedtest_results", "network_quality", "hourly_metrics"]:
+            for table in ["signal_history", "disruption_events", "speedtest_results", "network_quality", "hourly_metrics", "gateway_poll_events", "continuous_ping"]:
                 cursor = await db.execute(f"SELECT COUNT(*) FROM {table}")
                 row = await cursor.fetchone()
                 stats[f"{table}_count"] = row[0] if row else 0
@@ -275,7 +323,8 @@ class DatabaseConnection:
 
         total_deleted = 0
         async with self.connection() as db:
-            for table in ["signal_history", "disruption_events", "speedtest_results", "network_quality"]:
+            # Note: gateway_poll_events is NOT included per user choice (no retention policy)
+            for table in ["signal_history", "disruption_events", "speedtest_results", "network_quality", "continuous_ping"]:
                 cursor = await db.execute(
                     f"DELETE FROM {table} WHERE timestamp_unix < ?", (cutoff,)
                 )

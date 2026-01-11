@@ -64,8 +64,17 @@ try {
     $machineStatus = & podman machine list --format "{{.Running}}" 2>$null | Select-Object -First 1
     if ($machineStatus -ne "true" -and $machineStatus -ne "Running") {
         Write-Host "      Starting Podman machine..." -ForegroundColor Yellow
-        & podman machine start 2>&1 | Out-Null
-        Start-Sleep -Seconds 3
+        $startResult = & podman machine start 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            # Check if it's just "already running" - that's OK
+            if ($startResult -match "already running") {
+                Write-Host "      Podman machine already running." -ForegroundColor Gray
+            } else {
+                throw "Failed to start Podman machine: $startResult"
+            }
+        } else {
+            Start-Sleep -Seconds 3
+        }
     }
     Write-Host "      Podman machine is running." -ForegroundColor Green
 

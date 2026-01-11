@@ -123,6 +123,11 @@ class GatewayService:
         self._outage_start_callbacks: list[Callable[[OutageEvent], Any]] = []
         self._outage_end_callbacks: list[Callable[[OutageEvent], Any]] = []
 
+        # Signal quality drop detection (Priority 4)
+        self._prev_nr_sinr: float | None = None
+        self._prev_lte_sinr: float | None = None
+        self._sinr_drop_threshold_db: float = settings.gateway.sinr_drop_threshold_db
+
     def on_signal_update(self, callback: Callable[[SignalData], Any]) -> None:
         """Register a callback for signal data updates."""
         self._callbacks.append(callback)
@@ -157,6 +162,9 @@ class GatewayService:
             self._success_count += 1
 
             self.circuit_breaker.record_success()
+
+            # Detect signal quality drops (Priority 4)
+            await self._detect_signal_drops(signal_data)
 
             # Detect outage recovery
             if self._in_outage:
@@ -227,6 +235,12 @@ class GatewayService:
         self.circuit_breaker.record_failure()
         log.warning("gateway_poll_error", error=message, error_count=self._error_count)
 
+        # Push error event to Loki for historical querying
+        await self._push_gateway_error_to_loki(message)
+
+        # Persist poll failure to database
+        await self._persist_poll_failure(message)
+
         # Detect outage start: circuit just opened
         if was_closed and self.circuit_breaker.state == CircuitState.OPEN and not self._in_outage:
             self._in_outage = True
@@ -254,6 +268,85 @@ class GatewayService:
                         await result
                 except Exception as e:
                     log.error("outage_start_callback_error", error=str(e))
+
+    async def _push_gateway_error_to_loki(self, message: str) -> None:
+        """Push gateway poll error to Loki for event visualization."""
+        settings = get_settings()
+        if not settings.loki.enabled:
+            return
+
+        try:
+            from .loki import get_loki_client
+
+            loki = get_loki_client()
+
+            # Build event data with all relevant fields
+            event_data: dict[str, Any] = {
+                "event": "gateway_poll_error",
+                "timestamp_unix": time.time(),
+                "error": message,
+                "error_count": self._error_count,
+                "circuit_state": self.circuit_breaker.state.value,
+                "failure_count": self.circuit_breaker.failure_count,
+            }
+
+            # Add last known signal for correlation
+            if self._current_data:
+                event_data["last_signal"] = {
+                    "nr_sinr": self._current_data.nr.sinr,
+                    "nr_rsrp": self._current_data.nr.rsrp,
+                    "lte_sinr": self._current_data.lte.sinr,
+                    "lte_rsrp": self._current_data.lte.rsrp,
+                }
+
+            # Labels for stream filtering (low cardinality only)
+            labels = {
+                "circuit_state": self.circuit_breaker.state.value,
+            }
+
+            await loki.push_event("gateway_error", event_data, labels)
+
+        except Exception as e:
+            # Don't fail polling if Loki push fails
+            log.warning("loki_gateway_error_push_error", error=str(e))
+
+    async def _persist_poll_failure(self, message: str) -> None:
+        """Persist poll failure to database for historical analysis."""
+        try:
+            from ..db.repository import GatewayPollRepository
+
+            repo = GatewayPollRepository()
+
+            # Determine error type from message
+            message_lower = message.lower()
+            if "timed out" in message_lower or "timeout" in message_lower:
+                error_type = "timeout"
+            elif "connection refused" in message_lower:
+                error_type = "connection_refused"
+            elif "http error" in message_lower:
+                error_type = "http_error"
+            else:
+                error_type = "unknown"
+
+            signal_snapshot = None
+            if self._current_data:
+                signal_snapshot = {
+                    "nr_sinr": self._current_data.nr.sinr,
+                    "nr_rsrp": self._current_data.nr.rsrp,
+                    "lte_sinr": self._current_data.lte.sinr,
+                    "lte_rsrp": self._current_data.lte.rsrp,
+                }
+
+            await repo.insert_failure(
+                error_type=error_type,
+                error_message=message,
+                circuit_state=self.circuit_breaker.state.value,
+                signal_snapshot=signal_snapshot,
+            )
+
+        except Exception as e:
+            # Don't fail polling if DB persist fails
+            log.warning("gateway_poll_failure_persist_error", error=str(e))
 
     def _parse_signal_data(self, raw: dict) -> SignalData:
         """Parse raw gateway response into SignalData model."""
@@ -315,6 +408,83 @@ class GatewayService:
             return float(value)
         except (ValueError, TypeError):
             return None
+
+    async def _detect_signal_drops(self, signal_data: SignalData) -> None:
+        """Detect significant SINR drops and emit events."""
+        # 5G SINR drop detection
+        if signal_data.nr.sinr is not None and self._prev_nr_sinr is not None:
+            drop = self._prev_nr_sinr - signal_data.nr.sinr
+            if drop > self._sinr_drop_threshold_db:
+                await self._emit_signal_quality_event(
+                    network="5g",
+                    metric="sinr",
+                    before_value=self._prev_nr_sinr,
+                    after_value=signal_data.nr.sinr,
+                    drop_db=drop,
+                )
+
+        # 4G SINR drop detection
+        if signal_data.lte.sinr is not None and self._prev_lte_sinr is not None:
+            drop = self._prev_lte_sinr - signal_data.lte.sinr
+            if drop > self._sinr_drop_threshold_db:
+                await self._emit_signal_quality_event(
+                    network="4g",
+                    metric="sinr",
+                    before_value=self._prev_lte_sinr,
+                    after_value=signal_data.lte.sinr,
+                    drop_db=drop,
+                )
+
+        # Update previous values for next comparison
+        self._prev_nr_sinr = signal_data.nr.sinr
+        self._prev_lte_sinr = signal_data.lte.sinr
+
+    async def _emit_signal_quality_event(
+        self,
+        network: str,
+        metric: str,
+        before_value: float,
+        after_value: float,
+        drop_db: float,
+    ) -> None:
+        """Emit a signal quality drop event to logs and Loki."""
+        log.warning(
+            "signal_quality_drop",
+            network=network,
+            metric=metric,
+            before_value=before_value,
+            after_value=after_value,
+            drop_db=drop_db,
+        )
+
+        settings = get_settings()
+        if not settings.loki.enabled:
+            return
+
+        try:
+            from .loki import get_loki_client
+
+            loki = get_loki_client()
+
+            event_data: dict[str, Any] = {
+                "event": "signal_quality_drop",
+                "timestamp_unix": time.time(),
+                "network": network,
+                "metric": metric,
+                "before_value": before_value,
+                "after_value": after_value,
+                "drop_db": drop_db,
+            }
+
+            labels = {
+                "network": network,
+                "metric": metric,
+            }
+
+            await loki.push_event("signal_quality", event_data, labels)
+
+        except Exception as e:
+            log.warning("loki_signal_quality_push_error", error=str(e))
 
     async def start_polling(self) -> None:
         """Start the background polling task."""

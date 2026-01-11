@@ -201,8 +201,8 @@
         "tooltip": {"mode": "multi"}
       },
       "targets": [
-        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "{job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap download_mbps | __error__=\"\"", "legendFormat": "Download", "refId": "A"},
-        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "{job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap upload_mbps | __error__=\"\"", "legendFormat": "Upload", "refId": "B"}
+        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "max_over_time({job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap download_mbps | __error__=\"\" [1m])", "legendFormat": "Download", "refId": "A"},
+        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "max_over_time({job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap upload_mbps | __error__=\"\" [1m])", "legendFormat": "Upload", "refId": "B"}
       ],
       "title": "Speed Test History",
       "type": "timeseries"
@@ -235,8 +235,8 @@
         "tooltip": {"mode": "multi"}
       },
       "targets": [
-        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "{job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap ping_ms | __error__=\"\"", "legendFormat": "Ping", "refId": "A"},
-        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "{job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap jitter_ms | __error__=\"\"", "legendFormat": "Jitter", "refId": "B"}
+        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "max_over_time({job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap ping_ms | __error__=\"\" [1m])", "legendFormat": "Ping", "refId": "A"},
+        {"datasource": {"type": "loki", "uid": "loki"}, "expr": "max_over_time({job=\"tmobile-dashboard\", event_type=\"speedtest\", status=\"success\"} | json | unwrap jitter_ms | __error__=\"\" [1m])", "legendFormat": "Jitter", "refId": "B"}
       ],
       "title": "Latency History",
       "type": "timeseries"

@@ -42,7 +42,13 @@
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/kill-stack.ps1)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts/start-stack.ps1)",
       "Bash(powershell:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(podman machine:*)",
+      "Bash(Start-Sleep -Seconds 2)",
+      "Bash(tree:*)",
+      "Bash(podman port:*)",
+      "Bash(ForEach-Object { $_Id })",
+      "Bash(Select-Object -First 1)"
     ]
   }
 }

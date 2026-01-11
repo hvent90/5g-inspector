@@ -159,6 +159,30 @@ async def lifespan(app: FastAPI) -> AsyncIterator[dict]:
         except Exception as e:
             log.error("gateway_outage_persist_error", error=str(e))
 
+        # Push outage start to Loki for event visualization
+        if settings.loki.enabled:
+            try:
+                from .loki import get_loki_client
+                loki = get_loki_client()
+
+                event_data = {
+                    "event": "gateway_outage_start",
+                    "timestamp_unix": outage.start_time,
+                    "error_count": outage.error_count,
+                    "last_error": outage.last_error,
+                }
+                # Add last known signal for correlation
+                if state.gateway.current_data:
+                    event_data["last_signal"] = {
+                        "nr_sinr": state.gateway.current_data.nr.sinr,
+                        "nr_rsrp": state.gateway.current_data.nr.rsrp,
+                        "lte_sinr": state.gateway.current_data.lte.sinr,
+                        "lte_rsrp": state.gateway.current_data.lte.rsrp,
+                    }
+                await loki.push_event("gateway_outage", event_data, {"status": "started"})
+            except Exception as e:
+                log.warning("loki_outage_start_push_error", error=str(e))
+
     async def on_gateway_outage_end(outage: OutageEvent) -> None:
         """Resolve the disruption event when gateway connectivity is restored."""
         nonlocal _current_outage_event_id
@@ -183,6 +207,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[dict]:
             _current_outage_event_id = None
         except Exception as e:
             log.error("gateway_outage_resolve_error", error=str(e))
+
+        # Push outage end to Loki for event visualization
+        if settings.loki.enabled:
+            try:
+                from .loki import get_loki_client
+                loki = get_loki_client()
+
+                event_data = {
+                    "event": "gateway_outage_end",
+                    "timestamp_unix": outage.end_time or time.time(),
+                    "start_time": outage.start_time,
+                    "duration_seconds": outage.duration_seconds,
+                    "error_count": outage.error_count,
+                }
+                await loki.push_event("gateway_outage", event_data, {"status": "resolved"})
+            except Exception as e:
+                log.warning("loki_outage_end_push_error", error=str(e))
 
     state.gateway.on_outage_start(on_gateway_outage_start)
     state.gateway.on_outage_end(on_gateway_outage_end)
@@ -226,6 +267,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[dict]:
     await network_quality.start()
     log.info("network_quality_auto_started", interval_minutes=network_quality.get_config().get("interval_minutes"))
 
+    # Start continuous ping monitor for short outage detection
+    from .ping_monitor import get_ping_monitor
+    ping_monitor = get_ping_monitor()
+    await ping_monitor.start()
+    log.info("ping_monitor_auto_started", interval_seconds=ping_monitor.get_config().get("interval_seconds"))
+
     # Initialize Loki client for event logging (creates singleton)
     from .loki import get_loki_client
     get_loki_client()
@@ -247,6 +294,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[dict]:
     network_quality = get_network_quality_service()
     await network_quality.stop()
     log.info("network_quality_stopped")
+
+    # Stop continuous ping monitor
+    from .ping_monitor import get_ping_monitor
+    ping_monitor = get_ping_monitor()
+    await ping_monitor.stop()
+    log.info("ping_monitor_stopped")
 
     # Stop gateway polling
     await state.gateway.stop_polling()
