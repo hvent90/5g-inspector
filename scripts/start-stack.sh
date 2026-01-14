@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# T-Mobile Dashboard - Full Stack Startup Script
-# Starts infra (containers), backend, and frontend with LAN access
+# NetPulse - Full Stack Startup Script
+# Starts infra (Grafana container), backend, and frontend with LAN access
 # Press Ctrl+C to gracefully stop all services
 
 set -e
@@ -70,8 +70,8 @@ cleanup() {
         wait "$BACKEND_PID" 2>/dev/null || true
     fi
 
-    # Stop infra containers
-    echo -e "${YELLOW}Stopping infra containers...${NC}"
+    # Stop Grafana container
+    echo -e "${YELLOW}Stopping Grafana container...${NC}"
     cd "$REPO_ROOT"
     if command -v podman &> /dev/null; then
         podman compose -f infra/docker-compose.yml down 2>/dev/null || true
@@ -87,7 +87,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 main() {
-    banner "$GREEN" "T-Mobile Dashboard - Full Stack"
+    banner "$GREEN" "NetPulse - Full Stack"
 
     cd "$REPO_ROOT"
 
@@ -113,23 +113,16 @@ main() {
         exit 1
     fi
 
-    # Step 2: Configure Prometheus and start infra containers
-    echo -e "${CYAN}[2/4] Starting infra containers...${NC}"
-    LAN_IP=$(get_lan_ip)
-
-    # Update Prometheus config with the host IP so it can scrape the backend
-    PROM_CONFIG="$REPO_ROOT/infra/prometheus/prometheus.yml"
-    sed -i.bak -E "s|targets: \['[^']+:8080'\]|targets: ['${LAN_IP}:8080']|g" "$PROM_CONFIG"
-    rm -f "${PROM_CONFIG}.bak"
-    echo -e "      ${WHITE}Configured Prometheus to scrape backend at ${LAN_IP}:8080${NC}"
+    # Step 2: Start Grafana container
+    echo -e "${CYAN}[2/4] Starting Grafana container...${NC}"
 
     $COMPOSE_CMD -f infra/docker-compose.yml up -d
-    echo -e "      ${GREEN}Infra containers started.${NC}"
+    echo -e "      ${GREEN}Grafana container started.${NC}"
 
     # Step 3: Start backend
-    echo -e "${CYAN}[3/4] Starting backend (port 8080)...${NC}"
-    cd "$REPO_ROOT/backend"
-    uv run python -m tmobile_dashboard.main &
+    echo -e "${CYAN}[3/4] Starting backend (port 3001)...${NC}"
+    cd "$REPO_ROOT/apps/api"
+    bun run dev &
     BACKEND_PID=$!
     cd "$REPO_ROOT"
     sleep 2
@@ -148,12 +141,12 @@ main() {
 
     echo -e "${WHITE}Local access:${NC}"
     echo -e "  ${CYAN}Frontend:     http://localhost:5173${NC}"
-    echo -e "  ${CYAN}Backend API:  http://localhost:8080${NC}"
-    echo -e "  ${CYAN}Grafana:      http://localhost:3002  (admin/tmobile123)${NC}"
+    echo -e "  ${CYAN}Backend API:  http://localhost:3001${NC}"
+    echo -e "  ${CYAN}Grafana:      http://localhost:3002  (admin/netpulse123)${NC}"
     echo ""
     echo -e "${WHITE}LAN access (from other devices):${NC}"
     echo -e "  ${CYAN}Frontend:     http://${LAN_IP}:5173${NC}"
-    echo -e "  ${CYAN}Backend API:  http://${LAN_IP}:8080${NC}"
+    echo -e "  ${CYAN}Backend API:  http://${LAN_IP}:3001${NC}"
     echo -e "  ${CYAN}Grafana:      http://${LAN_IP}:3002${NC}"
     echo ""
     echo -e "${YELLOW}Press Ctrl+C to stop all services...${NC}"

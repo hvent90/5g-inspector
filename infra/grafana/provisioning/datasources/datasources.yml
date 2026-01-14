@@ -1,37 +1,19 @@
-# Grafana Datasource Provisioning for T-Mobile Dashboard
-# Auto-configures all LGTM stack datasources
+# Grafana Datasource Provisioning for NetPulse
+# Simplified to use SQLite as primary data source
 
 apiVersion: 1
 
 datasources:
-  # Prometheus - Primary metrics source
-  - name: Prometheus
-    type: prometheus
+  # SQLite - Primary data source for signal history and disruption events
+  # Requires: grafana-cli plugins install frser-sqlite-datasource
+  - name: SQLite
+    type: frser-sqlite-datasource
     access: proxy
-    uid: prometheus
-    url: http://prometheus:9090
+    uid: sqlite
     isDefault: true
     editable: false
     jsonData:
-      httpMethod: POST
-      manageAlerts: true
-      prometheusType: Prometheus
-      prometheusVersion: 2.48.0
-      exemplarTraceIdDestinations:
-        - name: traceID
-          datasourceUid: tempo
-
-  # Mimir - Long-term metrics storage
-  - name: Mimir
-    type: prometheus
-    access: proxy
-    uid: mimir
-    url: http://mimir:9009/prometheus
-    editable: false
-    jsonData:
-      httpMethod: POST
-      prometheusType: Mimir
-      prometheusVersion: 2.11.0
+      path: /var/lib/grafana/signal_history.db
 
   # Loki - Log aggregation
   - name: Loki
@@ -63,12 +45,6 @@ datasources:
         spanEndTimeShift: '1h'
         filterByTraceID: true
         filterBySpanID: true
-      tracesToMetrics:
-        datasourceUid: prometheus
-        spanStartTimeShift: '-1h'
-        spanEndTimeShift: '1h'
-      serviceMap:
-        datasourceUid: prometheus
       nodeGraph:
         enabled: true
       lokiSearch:

@@ -1,7 +1,6 @@
 # Guidelines
 
 - use bun over npm/npx when possible (should be always)
-- use uv over pip/venv for Python
 - monorepo
 - create verifiable success/error feedback loops (ex: linter)
   - use oxfmt: https://oxc.rs/llms.txt
@@ -26,17 +25,15 @@ When implementing features that span multiple services (API + frontend, etc.), d
 
 ```bash
 # Good: silent on success, shows error details on failure
-curl -sf http://localhost:8080/health | jq -e '.status == "healthy"' > /dev/null || echo "FAIL: Backend not healthy. Is it running? Check: uv run python -m tmobile_dashboard.main"
+curl -sf http://localhost:3001/health | jq -e '.status == "healthy"' > /dev/null || echo "FAIL: Backend not healthy. Is it running? Check: bun run dev in apps/api"
 
 # Verify signal endpoint returns data
-curl -sf http://localhost:8080/api/signal | jq -e '.nr_sinr' > /dev/null || echo "FAIL: Signal endpoint broken or gateway unreachable"
+curl -sf http://localhost:3001/api/signal | jq -e '.nr_sinr' > /dev/null || echo "FAIL: Signal endpoint broken or gateway unreachable"
 ```
 
 The ideal verification should follow the "quiet success, loud failure" intent.
 
-## File Upload Verification (for Effect/TypeScript backend)
-
-> **Note:** This applies to the target Effect/TypeScript backend, not the current Python backend.
+## File Upload Verification
 
 After implementing any multipart/file upload endpoint, you MUST verify with an actual upload before considering the feature complete:
 
@@ -59,19 +56,17 @@ After implementing any multipart/file upload endpoint, you MUST verify with an a
 - Always wrap in `Schema.Struct({ fieldName: Multipart.SingleFileSchema })`
 - Handler must access `payload.fieldName`, not `payload` directly
 
-## Python Backend
+## API Backend (Effect/TypeScript)
 
 ```bash
-cd backend
-uv run python -m tmobile_dashboard.main    # Run server (port 8080)
-uv run uvicorn tmobile_dashboard.api:app --reload  # Dev with hot reload
-uv run pytest                              # Run tests
-uv run ruff check src                      # Lint
+cd apps/api
+bun run dev    # Run server (port 3001)
+bun run build  # Build for production
+bun run test   # Run tests
 ```
 
-- No `__init__.py` files needed (implicit namespace packages, PEP 420)
-- Dependencies managed via `pyproject.toml`
-- `uv run` auto-creates venv and installs deps on first run
+- Effect-based TypeScript backend
+- Located at `apps/api/`
 
 ## Observability (LGTM Stack)
 
@@ -84,19 +79,13 @@ bun run dev:app     # Apps only (skip infra)
 
 | Service | Port | URL / Notes |
 |---------|------|-------------|
-| **Backend API** | 8080 | http://localhost:8080 |
+| **Backend API** | 3001 | http://localhost:3001 |
 | **Frontend** | 5173 | http://localhost:5173 (Vite dev) |
-| **Grafana** | 3002 | http://localhost:3002 (admin/tmobile123) |
-| **Prometheus** | 9090 | http://localhost:9090 |
-| **Alertmanager** | 9093 | http://localhost:9093 |
-| **Mimir** | 9009 | Long-term metrics storage |
-| **Loki** | 3100 | Log aggregation |
-| **Tempo** | 3200 | Tracing UI |
-| **Gateway Exporter** | 9100 | T-Mobile gateway metrics |
+| **Grafana** | 3002 | http://localhost:3002 (admin/netpulse123) |
 
-**OTLP endpoints:** `localhost:4317` (gRPC) or `localhost:4318` (HTTP)
+> **Note:** The stack has been simplified. Grafana now queries SQLite directly. Prometheus, Alertmanager, Mimir, Loki, Tempo, and Gateway Exporter have been removed.
 
-**RCA Guide:** See `docs/rca-guide.md` for diagnosing network issues using SQLite and Loki queries.
+**RCA Guide:** See `docs/rca-guide.md` for diagnosing network issues using SQLite queries.
 
 ## Full Stack Scripts
 
@@ -113,15 +102,15 @@ Start the entire stack (infra + backend + frontend) with a single command. Servi
 ```
 
 **Features:**
-- Starts Podman/Docker containers (Grafana, Prometheus, etc.)
-- Starts Python backend on port 8080
+- Starts Podman/Docker container (Grafana)
+- Starts Effect/TypeScript backend on port 3001
 - Starts Vite frontend on port 5173 with `--host` for LAN access
 - Prints local and LAN URLs on startup
 - Graceful shutdown on Ctrl+C (stops all services)
 
 **LAN Access:** After starting, access from other devices using your machine's IP:
 - Frontend: `http://<your-ip>:5173`
-- Backend API: `http://<your-ip>:8080`
+- Backend API: `http://<your-ip>:3001`
 - Grafana: `http://<your-ip>:3002`
 
 ### Kill Zombie Processes
@@ -137,23 +126,21 @@ If processes get orphaned (e.g., after a crash), use the kill scripts to clean u
 ```
 
 **What it kills:**
-- Python backend processes (`tmobile_dashboard`, `uvicorn`)
-- Node/Bun processes (Vite frontend)
-- Stack containers (grafana, prometheus, alertmanager, etc.)
+- API backend processes (Bun/Node)
+- Frontend processes (Vite)
+- Stack container (grafana)
 
 **Output includes:** Port status showing which ports are free vs still in use
 
 ---
 
-## Current State & Parity Tasks
+## Current State
 
-> **Note:** This project is migrating toward the practices above. Current state:
-
-| Practice | Current State | Target |
-|----------|--------------|--------|
-| Package manager | Bun (TS), uv (Python) | Bun |
-| Backend | Python/FastAPI | Effect/TypeScript |
-| Frontend UI | Base UI (partial) | Base UI |
-| Linting | ruff (Python), eslint (TS) | oxfmt |
-| Infra commands | `infra/docker-compose.yml` | bun run infra:* |
-| Monorepo | Partial (frontend/backend dirs) | Full workspace |
+| Practice | Current State |
+|----------|--------------|
+| Package manager | Bun |
+| Backend | Effect/TypeScript (apps/api) |
+| Frontend UI | Base UI |
+| Linting | oxfmt (TS) |
+| Infra commands | bun run infra:* |
+| Monorepo | Full workspace |

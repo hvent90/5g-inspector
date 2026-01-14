@@ -3,21 +3,21 @@
 # Usage: ./scripts/verify-integration.sh [api_port]
 
 SCRIPT_DIR="$(dirname "$0")"
-API_PORT="${1:-8080}"
+API_PORT="${1:-3001}"
 API_URL="http://localhost:$API_PORT"
 
 # Step 1: Verify API is running
-curl -sf "$API_URL/" >/dev/null || {
+curl -sf "$API_URL/health" >/dev/null || {
     echo "FAIL: API server not running at $API_URL"
-    echo "  - Start with: python server.py"
+    echo "  - Start with: bun run dev in apps/api"
     echo "  - Then re-run this verification"
     exit 1
 }
 
 # Step 2: Verify frontend build exists
-[ -d "$SCRIPT_DIR/../frontend/dist" ] || {
+[ -d "$SCRIPT_DIR/../apps/web/dist" ] || {
     echo "FAIL: Frontend build not found"
-    echo "  - Run: cd frontend && npm run build"
+    echo "  - Run: bun run build:web"
     exit 1
 }
 
@@ -25,38 +25,24 @@ curl -sf "$API_URL/" >/dev/null || {
 
 # Signal data endpoint
 SIGNAL_RESP=$(curl -sf "$API_URL/api/signal")
-echo "$SIGNAL_RESP" | grep -q '"4g"' || {
-    echo "FAIL: /api/signal missing 4G data"
+echo "$SIGNAL_RESP" | grep -q '"nr_sinr"' || {
+    echo "FAIL: /api/signal missing NR SINR data"
     echo "  - Response: $SIGNAL_RESP"
     echo "  - Check gateway connectivity"
     exit 1
 }
 
-# History endpoint with parameters
-curl -sf "$API_URL/api/history?duration=60&resolution=auto" | grep -q '"data"' || {
-    echo "FAIL: /api/history not returning expected format"
-    echo "  - Database may be empty or query failing"
+# Disruptions endpoint
+curl -sf "$API_URL/api/disruptions" | head -c 1 | grep -q '[' || {
+    echo "FAIL: /api/disruptions not returning expected format"
+    echo "  - Check apps/api/src/routes/disruptions.ts"
     exit 1
 }
 
-# Scheduler status
-curl -sf "$API_URL/api/scheduler/status" | grep -q '"enabled"' || {
-    echo "FAIL: /api/scheduler/status not responding"
-    echo "  - Check scheduler.py import in server.py"
-    exit 1
-}
-
-# Service terms endpoint
-curl -sf "$API_URL/api/service-terms" | head -c 1 | grep -q '{' || {
-    echo "FAIL: /api/service-terms not returning JSON"
-    echo "  - Check service_terms.py module"
-    exit 1
-}
-
-# Step 4: Verify index.html serves properly
-curl -sf "$API_URL/index.html" | grep -q '<title>' || {
-    echo "FAIL: index.html not serving correctly"
-    echo "  - Check file permissions and path"
+# Gateway info endpoint
+curl -sf "$API_URL/api/gateway/info" | grep -q '"device_name"' || {
+    echo "FAIL: /api/gateway/info not responding"
+    echo "  - Check apps/api/src/routes/gateway.ts"
     exit 1
 }
 

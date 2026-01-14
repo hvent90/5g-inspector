@@ -1,5 +1,5 @@
 {
-  "name": "tmobile-dashboard",
+  "name": "netpulse",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,9 @@
   "scripts": {
     "dev": "bun run infra:up && bun run dev:app",
     "dev:app": "bun run --filter '*' dev",
-    "dev:web": "bun run --filter @tmobile-dashboard/web dev",
+    "dev:web": "bun run --filter @netpulse/web dev",
     "build": "bun run --filter '*' build",
-    "build:web": "bun run --filter @tmobile-dashboard/web build",
+    "build:web": "bun run --filter @netpulse/web build",
     "lint": "bun run --filter '*' lint",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run --filter '*' test",

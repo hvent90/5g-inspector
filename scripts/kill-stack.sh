@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# T-Mobile Dashboard - Kill Zombie Processes
+# NetPulse - Kill Zombie Processes
 # Finds and terminates any orphaned processes from the stack
 
 set -e
@@ -64,53 +64,39 @@ check_port() {
     fi
 }
 
-banner "T-Mobile Dashboard - Cleanup Zombie Processes"
+banner "NetPulse - Cleanup Zombie Processes"
 
 found_any=false
 
-# 1. Kill Python backend processes
-echo -e "${CYAN}[1/5] Checking for Python backend processes...${NC}"
-if kill_by_pattern "tmobile_dashboard" "backend"; then
+# 1. Kill API backend processes (Bun)
+echo -e "${CYAN}[1/4] Checking for API backend processes...${NC}"
+if kill_by_pattern "bun.*apps/api" "API backend"; then
     found_any=true
 else
     echo -e "      ${GREEN}None found.${NC}"
 fi
 
-# 2. Kill uvicorn processes
-echo -e "${CYAN}[2/5] Checking for uvicorn processes...${NC}"
-if kill_by_pattern "uvicorn" "uvicorn"; then
-    found_any=true
-else
-    echo -e "      ${GREEN}None found.${NC}"
-fi
-
-# 3. Kill Vite/Node processes
-echo -e "${CYAN}[3/5] Checking for Vite/Node processes...${NC}"
+# 2. Kill Vite/Node processes
+echo -e "${CYAN}[2/4] Checking for Vite/Node processes...${NC}"
 if kill_by_pattern "vite" "Vite"; then
     found_any=true
 else
     echo -e "      ${GREEN}None found.${NC}"
 fi
 
-# 4. Kill Bun processes
-echo -e "${CYAN}[4/5] Checking for Bun processes...${NC}"
+# 3. Kill Bun processes
+echo -e "${CYAN}[3/4] Checking for Bun processes...${NC}"
 if kill_by_pattern "bun.*dev" "Bun dev"; then
     found_any=true
 else
     echo -e "      ${GREEN}None found.${NC}"
 fi
 
-# 5. Stop and remove containers
-echo -e "${CYAN}[5/5] Checking for stack containers...${NC}"
+# 4. Stop and remove containers (Grafana only)
+echo -e "${CYAN}[4/4] Checking for stack containers...${NC}"
 
 containers=(
-    "tmobile-grafana"
-    "tmobile-prometheus"
-    "tmobile-alertmanager"
-    "tmobile-mimir"
-    "tmobile-loki"
-    "tmobile-tempo"
-    "tmobile-gateway-exporter"
+    "netpulse-grafana"
 )
 
 container_runtime=""
@@ -152,7 +138,7 @@ echo ""
 
 # Show port status
 echo -e "${CYAN}Port status:${NC}"
-ports=(5173 8080 3002 9090 9093 9100)
+ports=(5173 3001 3002)
 for port in "${ports[@]}"; do
     check_port "$port"
 done

@@ -1,4 +1,4 @@
-# Bun configuration for tmobile-dashboard monorepo
+# Bun configuration for netpulse monorepo
 
 [install]
 # Use exact versions for reproducible builds

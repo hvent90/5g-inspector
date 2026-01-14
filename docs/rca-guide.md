@@ -1,6 +1,6 @@
 # Root Cause Analysis Guide for Claude Code
 
-This guide helps Claude Code diagnose network issues using the T-Mobile Dashboard's observability stack.
+This guide helps Claude Code diagnose network issues using NetPulse's observability stack.
 
 ## Quick Reference
 
@@ -20,7 +20,7 @@ This guide helps Claude Code diagnose network issues using the T-Mobile Dashboar
 ### Database Path
 
 ```bash
-backend/signal_history.db
+data/signal_history.db
 ```
 
 ---
@@ -296,7 +296,7 @@ ORDER BY d.timestamp_unix DESC;
 ### Query Gateway Errors
 ```bash
 curl -s 'http://localhost:3100/loki/api/v1/query_range' \
-  --data-urlencode 'query={job="tmobile-dashboard", event_type="gateway_error"}' \
+  --data-urlencode 'query={job="netpulse", event_type="gateway_error"}' \
   --data-urlencode 'start='$(date -d '1 hour ago' +%s)000000000 \
   --data-urlencode 'end='$(date +%s)000000000 \
   | jq '.data.result[].values | length'
@@ -305,21 +305,21 @@ curl -s 'http://localhost:3100/loki/api/v1/query_range' \
 ### Query Outage Events
 ```bash
 curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="tmobile-dashboard", event_type="gateway_outage"} | json' \
+  --data-urlencode 'query={job="netpulse", event_type="gateway_outage"} | json' \
   | jq '.data.result[].values[] | .[1] | fromjson'
 ```
 
 ### Query Continuous Ping Failures
 ```bash
 curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="tmobile-dashboard", event_type="continuous_ping", success="false"}' \
+  --data-urlencode 'query={job="netpulse", event_type="continuous_ping", success="false"}' \
   | jq '.data.result | length'
 ```
 
 ### Query Signal Quality Drops
 ```bash
 curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="tmobile-dashboard", event_type="signal_quality"} | json' \
+  --data-urlencode 'query={job="netpulse", event_type="signal_quality"} | json' \
   | jq '.data.result[].values[] | .[1] | fromjson | {network, drop_db, before: .before_value, after: .after_value}'
 ```
 
@@ -375,19 +375,19 @@ curl -s 'http://localhost:3100/loki/api/v1/query' \
 
 ```bash
 # Count failures in last hour
-sqlite3 backend/signal_history.db "SELECT COUNT(*) FROM gateway_poll_events WHERE success=0 AND timestamp_unix > unixepoch()-3600"
+sqlite3 data/signal_history.db "SELECT COUNT(*) FROM gateway_poll_events WHERE success=0 AND timestamp_unix > unixepoch()-3600"
 
 # Average ping latency in last hour
-sqlite3 backend/signal_history.db "SELECT ROUND(AVG(latency_ms),1) FROM continuous_ping WHERE success=1 AND timestamp_unix > unixepoch()-3600"
+sqlite3 data/signal_history.db "SELECT ROUND(AVG(latency_ms),1) FROM continuous_ping WHERE success=1 AND timestamp_unix > unixepoch()-3600"
 
 # Current signal quality
-sqlite3 backend/signal_history.db "SELECT nr_sinr, nr_rsrp, lte_sinr, lte_rsrp FROM signal_history ORDER BY timestamp_unix DESC LIMIT 1"
+sqlite3 data/signal_history.db "SELECT nr_sinr, nr_rsrp, lte_sinr, lte_rsrp FROM signal_history ORDER BY timestamp_unix DESC LIMIT 1"
 
 # Recent disruption events
-sqlite3 backend/signal_history.db "SELECT datetime(timestamp_unix,'unixepoch','localtime'), event_type, description FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 10"
+sqlite3 data/signal_history.db "SELECT datetime(timestamp_unix,'unixepoch','localtime'), event_type, description FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 10"
 
 # Failure rate in last 24h
-sqlite3 backend/signal_history.db "SELECT ROUND(SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) || '%' FROM continuous_ping WHERE timestamp_unix > unixepoch()-86400"
+sqlite3 data/signal_history.db "SELECT ROUND(SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) || '%' FROM continuous_ping WHERE timestamp_unix > unixepoch()-86400"
 ```
 
 ---

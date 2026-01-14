@@ -1,121 +1,12 @@
 /**
- * Base UI Component Styles
+ * Base UI Component Styles - Windows 95 Theme
  *
  * These styles extend the existing design system (styles.css)
  * to support Base UI components while maintaining visual consistency.
  *
  * Base UI is unstyled by default, so we need to provide all visual styling.
+ * Updated to use classic Windows 95 beveled border style.
  */
-
-/* Select Popup (dropdown menu) */
-.select-popup {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 4px;
-  min-width: 180px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
-
-/* Select Item (option in dropdown) */
-.select-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 10px;
-  font-size: 11px;
-  font-family: inherit;
-  color: var(--text);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.1s;
-  gap: 8px;
-}
-
-.select-item:hover,
-.select-item[data-highlighted] {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.select-item[data-selected] {
-  color: var(--accent);
-}
-
-.select-item-indicator {
-  width: 12px;
-  height: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-}
-
-/* Enhanced report-select for Base UI */
-.report-select[data-base-ui] {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.report-select[data-base-ui]:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Button variants for Base UI */
-.btn-primary {
-  padding: 6px 16px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-
-.btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.btn-secondary {
-  padding: 6px 16px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.btn-secondary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 
 /* Progress/Meter component styles */
 .progress-ring {
@@ -128,7 +19,7 @@
 
 .progress-ring-value {
   stroke: var(--accent);
-  stroke-linecap: round;
+  stroke-linecap: square; /* Win95 style - no rounded caps */
   transition: stroke-dashoffset 0.3s ease;
 }
 
@@ -144,63 +35,37 @@
   stroke: var(--bad);
 }
 
-/* Toast notification styles */
-.toast-viewport {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
+/* Enhanced report-select for Base UI */
+.report-select[data-base-ui] {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  z-index: 9999;
-  max-width: 400px;
 }
 
-.toast-root {
+.report-select[data-base-ui]:focus {
+  outline: 1px dotted var(--text);
+  outline-offset: -3px;
+}
+
+/* Tooltip styles - Windows 95 style */
+.tooltip {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 12px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  animation: toast-slide-in 0.2s ease-out;
-}
-
-.toast-root.toast-error {
-  border-color: var(--bad);
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.toast-root.toast-success {
-  border-color: var(--good);
-  background: rgba(34, 197, 94, 0.1);
-}
-
-.toast-title {
-  font-size: 12px;
-  font-weight: 600;
+  /* Windows 95 outset border */
+  border: 2px solid;
+  border-color: var(--win95-light) var(--win95-dark) var(--win95-dark) var(--win95-light);
+  border-radius: 0;
+  padding: 6px 10px;
+  font-size: 10px;
   color: var(--text);
+  max-width: 200px;
+  box-shadow: 2px 2px 0 var(--win95-shadow);
+  z-index: 1000;
 }
 
-.toast-description {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 2px;
-  margin-left: auto;
-}
-
-.toast-close:hover {
-  color: var(--text);
+.tooltip-arrow {
+  fill: var(--surface);
+  stroke: var(--win95-dark);
 }
 
 @keyframes toast-slide-in {
@@ -212,22 +77,4 @@
     transform: translateX(0);
     opacity: 1;
   }
-}
-
-/* Tooltip styles */
-.tooltip {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 10px;
-  color: var(--text);
-  max-width: 200px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
-
-.tooltip-arrow {
-  fill: var(--surface);
-  stroke: var(--border);
 }

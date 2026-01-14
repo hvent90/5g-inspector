@@ -16,7 +16,7 @@
     },
     {
       "host": "208.54.0.1",
-      "name": "T-Mobile DNS"
+      "name": "Carrier DNS"
     }
   ],
   "packet_loss_threshold_percent": 5,

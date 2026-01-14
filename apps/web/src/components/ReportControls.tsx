@@ -116,7 +116,7 @@ export function ReportControls({ onReportLoaded }: ReportControlsProps) {
     const url = `/api/diagnostics/export/${format}?duration=${hours}`;
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tmobile_diagnostic_report.${format}`;
+    a.download = `netpulse_diagnostic_report.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

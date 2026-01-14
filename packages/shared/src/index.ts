@@ -1,4 +1,4 @@
-// Shared utilities and types for tmobile-dashboard
+// Shared utilities and types for netpulse
 // Add shared code here that can be used across apps
 
 export const VERSION = "1.0.0";

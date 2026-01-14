@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document evaluates the migration from vanilla TypeScript/CSS to Base UI for the T-Mobile Dashboard frontend. After analysis, **partial adoption is recommended** - Base UI is well-suited for interactive components but the current data visualization approach should be preserved.
+This document evaluates the migration from vanilla TypeScript/CSS to Base UI for the NetPulse frontend. After analysis, **partial adoption is recommended** - Base UI is well-suited for interactive components but the current data visualization approach should be preserved.
 
 ## Current Frontend Architecture
 
@@ -10,7 +10,7 @@ This document evaluates the migration from vanilla TypeScript/CSS to Base UI for
 - **Framework**: Vanilla TypeScript with Vite
 - **Styling**: Custom CSS (364 lines)
 - **Data Visualization**: Chart.js (dependency present, not yet used extensively)
-- **Package**: `@tmobile-dashboard/web` in Bun monorepo
+- **Package**: `@netpulse/web` in Bun monorepo
 
 ### Component Inventory
 
@@ -175,7 +175,7 @@ export function DurationSelect({ value, onChange }: DurationSelectProps) {
 
 ## Conclusion
 
-Base UI is a good fit for the T-Mobile Dashboard's interactive components, but a full migration is not recommended due to the working real-time signal display code. The hybrid approach (React islands) allows incremental adoption while preserving stability.
+Base UI is a good fit for NetPulse's interactive components, but a full migration is not recommended due to the working real-time signal display code. The hybrid approach (React islands) allows incremental adoption while preserving stability.
 
 ### Next Steps
 1. Create issue for Phase 1 setup

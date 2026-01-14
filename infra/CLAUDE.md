@@ -4,81 +4,88 @@
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| Grafana | 3002 | Dashboards (admin/tmobile123) |
-| Prometheus | 9090 | Metrics scraping & alerting |
-| Alertmanager | 9093 | Alert routing |
-| Mimir | 9009 | Long-term metrics (30 days) |
-| Loki | 3100 | Log aggregation |
-| Tempo | 3200, 4317, 4318 | Distributed tracing |
-| Gateway Exporter | 9100 | T-Mobile gateway metrics |
+| Grafana | 3002 | Dashboards & Alerting (admin/netpulse123) |
 
-## Gateway Exporter
+> **Note:** The Gateway Exporter (port 9100) has been removed. The API backend (apps/api) polls the gateway directly at 200ms intervals and stores data in SQLite, which Grafana queries directly.
 
-### Supported Gateway Models
+## Grafana Alert Rules (SQLite-based)
 
-| Model | Manufacturer | Notes |
-|-------|--------------|-------|
-| **Arcadyan KVD21** | Arcadyan | Most common, full support |
-| **Sagemcom Fast 5688W** | Sagemcom | Full support |
-| **Nokia 5G21** | Nokia | Full support |
+Alerting is managed via Grafana's unified alerting system using SQLite queries for persistent historical data.
+This provides better data retention and more accurate alerting than Prometheus-only alerts.
 
-### Configuration
+Alert rules are provisioned from:
+- `grafana/provisioning/alerting/alert_rules.yml` - SQLite-based alert rule definitions
+- `grafana/provisioning/alerting/alerting.yml` - Contact points and notification policies
 
-```bash
-# Environment variables
-GATEWAY_URL=http://192.168.12.1/TMI/v1/gateway?get=all
-SCRAPE_INTERVAL=5  # seconds
-EXPORTER_PORT=9100
-```
+SQLite tables used for alerting:
+- `signal_history` - Raw signal samples (200ms interval)
+- `speedtest_results` - Speed test results with signal snapshots
+- `continuous_ping` - High-frequency ping/latency data
+- `gateway_poll_events` - Gateway connectivity events
+- `disruption_events` - Detected signal disruptions
 
-### Metrics Exposed
+### 1. Signal Quality Alerts (30s interval)
 
-```
-tmobile_signal_rsrp          # Reference Signal Received Power (dBm)
-tmobile_signal_sinr          # Signal to Interference Noise Ratio (dB)
-tmobile_signal_rsrq          # Reference Signal Received Quality (dB)
-tmobile_signal_rssi          # Received Signal Strength Indicator (dBm)
-tmobile_cell_pci             # Physical Cell ID
-tmobile_cell_enb             # eNodeB ID (tower)
-tmobile_cell_band            # Current band number
-tmobile_gateway_scrape_success         # 1 if scrape succeeded, 0 if failed
-tmobile_gateway_seconds_since_success  # Seconds since last successful scrape
-tmobile_scrape_duration_seconds        # How long the scrape took
-```
+| Alert | Threshold | Severity | Data Source |
+|-------|-----------|----------|-------------|
+| NetPulse 5G SINR Warning | SINR avg < 0 dB for 2m | warning | signal_history |
+| NetPulse 5G SINR Critical | SINR avg < -5 dB for 1m | critical | signal_history |
+| NetPulse 5G RSRP Warning | RSRP avg < -110 dBm for 2m | warning | signal_history |
+| NetPulse 5G RSRP Critical | RSRP avg < -120 dBm for 1m | critical | signal_history |
+| NetPulse Overall Signal Poor | RSRP<-105 AND SINR<5 AND RSRQ<-12 for 5m | warning | signal_history |
 
-## Prometheus Alert Rules
+### 2. Speedtest Alerts (60s interval)
 
-Three alert groups defined in `prometheus/rules/tmobile_alerts.yml`:
+| Alert | Threshold | Severity | Data Source |
+|-------|-----------|----------|-------------|
+| NetPulse Low Download Speed | avg < 10 Mbps over 1h | warning | speedtest_results |
+| NetPulse Very Low Download Speed | avg < 5 Mbps over 1h | critical | speedtest_results |
+| NetPulse Speedtest Failures | >3 failures in 1h | warning | speedtest_results |
 
-### 1. Signal Quality Alerts (`tmobile_signal_alerts`)
+### 3. Latency Alerts (30s interval)
 
-| Alert | Threshold | Severity |
-|-------|-----------|----------|
-| TMobileRSRPWarning | RSRP < -110 dBm | warning |
-| TMobileRSRPCritical | RSRP < -120 dBm | critical |
-| TMobileSINRDegraded | SINR < 0 dB | warning |
-| TMobileSINRCritical | SINR < -5 dB | critical |
-| TMobileRSRQDegraded | RSRQ < -15 dB | warning |
-| TMobileRSRQCritical | RSRQ < -19 dB | critical |
+| Alert | Threshold | Severity | Data Source |
+|-------|-----------|----------|-------------|
+| NetPulse High Latency Warning | avg > 100ms for 2m | warning | continuous_ping |
+| NetPulse High Latency Critical | avg > 200ms for 1m | critical | continuous_ping |
+| NetPulse High Packet Loss | > 5% for 2m | warning | continuous_ping |
+| NetPulse Severe Packet Loss | > 20% for 1m | critical | continuous_ping |
 
-### 2. Connection Stability Alerts (`tmobile_connection_alerts`)
+### 4. Connection Alerts (30s interval)
 
-| Alert | Condition | Severity |
-|-------|-----------|----------|
-| TMobileFrequentTowerHandoffs | PCI changes >3 in 15m | warning |
-| TMobileExcessiveTowerHandoffs | PCI changes >6 in 15m | critical |
-| TMobileConnectionDown | Scrape failed for 30s | critical |
-| TMobileConnectionUnstable | <90% success rate over 5m | warning |
-| TMobileDataStale | No data for >30s | warning |
-| TMobileExtendedOutage | No data for >300s | critical |
-| TMobileFrequentBandChanges | Band changes >4 in 30m | warning |
+| Alert | Threshold | Severity | Data Source |
+|-------|-----------|----------|-------------|
+| NetPulse Gateway Connection Failures | >10 failures in 1m | critical | gateway_poll_events |
+| NetPulse Gateway Connection Unstable | <90% success rate over 5m | warning | gateway_poll_events |
+| NetPulse No Data Collection | >60s since last data | critical | signal_history |
+| NetPulse Extended Data Outage | >300s since last data | critical | signal_history |
 
-### 3. Performance Alerts (`tmobile_performance_alerts`)
+### 5. Disruption Alerts (60s interval)
 
-| Alert | Condition | Severity |
-|-------|-----------|----------|
-| TMobileOverallSignalPoor | RSRP<-105 AND SINR<5 AND RSRQ<-12 | warning |
-| TMobileGatewaySlowResponse | Scrape duration >5s | warning |
+| Alert | Threshold | Severity | Data Source |
+|-------|-----------|----------|-------------|
+| NetPulse Frequent Disruptions | >10 events in 1h | warning | disruption_events |
+| NetPulse Critical Disruptions | Any critical severity in 15m | critical | disruption_events |
+| NetPulse Frequent Tower Handoffs | >3 tower changes in 15m | warning | disruption_events |
+| NetPulse Gateway Unreachable Events | >5 events in 1h | critical | disruption_events |
+
+### Notification Policy
+
+Alerts use Grafana's built-in notification system with severity-based timing:
+
+| Severity | Group Wait | Group Interval | Repeat Interval |
+|----------|------------|----------------|-----------------|
+| critical | 10s | 1m | 1h |
+| warning | 30s | 5m | 4h |
+| info | 60s | 15m | 12h |
+
+### Configuring Notifications
+
+To configure notifications in Grafana:
+
+1. **Email**: Edit `grafana/provisioning/alerting/alerting.yml` and set addresses in the `grafana-default-email` contact point
+2. **Slack/Discord/PagerDuty**: Add new contact points in `alerting.yml` with the appropriate receiver type
+3. **Custom webhooks**: Add webhook receivers pointing to your notification service
 
 ## Troubleshooting
 
@@ -101,120 +108,18 @@ podman machine list
 podman machine list
 
 # Check for port conflicts
-netstat -an | findstr "3002 9090 9093"
+netstat -an | findstr "3002"
 
 # View container logs
-podman logs tmobile-grafana
-podman logs tmobile-prometheus
-```
-
-**Gateway exporter not collecting:**
-```bash
-# Test gateway directly
-curl http://192.168.12.1/TMI/v1/gateway?get=all
-
-# Check exporter logs
-podman logs tmobile-gateway-exporter
-
-# Verify metrics endpoint
-curl http://localhost:9100/metrics
-```
-
-**Prometheus not scraping:**
-```bash
-# Check targets status
-curl http://localhost:9090/api/v1/targets
-
-# Verify config loaded
-curl http://localhost:9090/api/v1/status/config
+podman logs netpulse-grafana
 ```
 
 **Grafana dashboards empty:**
-- Verify Prometheus datasource: http://localhost:3002/connections/datasources
+- Verify SQLite datasource: http://localhost:3002/connections/datasources
 - Check time range selector (default may be too narrow)
-- Ensure gateway exporter is running and scraped
+- Ensure API backend (apps/api) is running and collecting data to SQLite
 
 ---
-
-## Prometheus Exporters
-
-### Never Cache Stale Data
-
-When a scrape fails, **clear all metric values** instead of serving cached data:
-
-```python
-# WRONG: Leaves stale values in gauges
-except Exception as e:
-    scrape_success.set(0)
-    logger.error(f"Scrape failed: {e}")
-
-# CORRECT: Clear metrics so Grafana shows gaps
-except Exception as e:
-    scrape_success.set(0)
-    clear_all_metrics()  # Set gauges to float('nan')
-    logger.error(f"Scrape failed: {e}")
-```
-
-Prometheus gauges retain their last value forever. NaN values create visible gaps in graphs.
-
-### Track Staleness Duration
-
-Always include metrics that answer:
-- "When was the last successful data collection?"
-- "How long has data been stale?"
-
-```python
-gateway_last_success_timestamp = Gauge('..._last_success_timestamp', 'Unix timestamp of last successful scrape')
-gateway_seconds_since_success = Gauge('..._seconds_since_success', 'Seconds since last successful data collection')
-```
-
-This enables staleness-based alerts and dashboards showing outage duration.
-
-## Prometheus Alerting
-
-### Alert on Data Staleness, Not Just Failures
-
-```yaml
-# Alert when data is stale (not just when scrape fails)
-- alert: TMobileDataStale
-  expr: tmobile_gateway_seconds_since_success > 30
-  labels:
-    severity: warning
-
-- alert: TMobileExtendedOutage
-  expr: tmobile_gateway_seconds_since_success > 300
-  labels:
-    severity: critical
-```
-
-## Grafana Dashboards
-
-### Annotate Outages on All Signal Graphs
-
-Add annotations to dashboards so outage periods are clearly visible:
-
-```json
-"annotations": {
-  "list": [
-    {
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "enable": true,
-      "expr": "your_scrape_success_metric == 0",
-      "iconColor": "red",
-      "name": "Outages",
-      "titleFormat": "Service Offline"
-    }
-  ]
-}
-```
-
-This adds red markers on all time-series panels during outages.
-
-### Show Staleness in Stats
-
-Include panels that show:
-- Current staleness duration (with color thresholds: green/yellow/red)
-- Last successful scrape timestamp (using `dateTimeFromNow` unit)
 
 ## Core Principle
 

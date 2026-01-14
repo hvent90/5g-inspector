@@ -2,13 +2,13 @@
 # Verify API health checks - quiet success, loud failure
 # Usage: ./scripts/verify-api.sh [port]
 
-PORT="${1:-8080}"
+PORT="${1:-3001}"
 BASE_URL="http://localhost:$PORT"
 
-# Health check - verify server responds with valid HTML
-curl -sf "$BASE_URL/" | head -c 15 | grep -q '<!DOCTYPE html>' || {
-    echo "FAIL: Server not responding at $BASE_URL"
-    echo "  - Is server.py running? python server.py"
+# Health check - verify server responds with healthy status
+curl -sf "$BASE_URL/health" | grep -q '"status":"healthy"' || {
+    echo "FAIL: Server not responding at $BASE_URL/health"
+    echo "  - Is the API running? bun run dev in apps/api"
     echo "  - Check if port $PORT is in use: netstat -an | grep $PORT"
     exit 1
 }
@@ -17,23 +17,14 @@ curl -sf "$BASE_URL/" | head -c 15 | grep -q '<!DOCTYPE html>' || {
 curl -sf "$BASE_URL/api/signal" | head -c 1 | grep -q '{' || {
     echo "FAIL: /api/signal not returning JSON"
     echo "  - Server may be running but API routes broken"
-    echo "  - Check server.py for errors in ProxyHandler"
+    echo "  - Check apps/api/src/routes/signal.ts for errors"
     exit 1
 }
 
-# Database stats check - verify DB is accessible
-curl -sf "$BASE_URL/api/db-stats" | grep -q '"total_records"' || {
-    echo "FAIL: /api/db-stats not returning expected data"
-    echo "  - Database may not be initialized"
-    echo "  - Check signal_history.db exists and is accessible"
-    exit 1
-}
-
-# Alerting system check
-curl -sf "$BASE_URL/api/alerts/config" | grep -q '"enabled"' || {
-    echo "FAIL: /api/alerts/config not responding"
-    echo "  - Alerting system may not be initialized"
-    echo "  - Check alerting.py for import errors"
+# Alerts endpoint check
+curl -sf "$BASE_URL/api/alerts" | head -c 1 | grep -q '[' || {
+    echo "FAIL: /api/alerts not returning expected format"
+    echo "  - Check apps/api/src/routes/alerts.ts"
     exit 1
 }
 

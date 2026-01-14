@@ -3,349 +3,281 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>5G Signal Monitor</title>
+  <title>NetPulse</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <header>
+  <!-- Windows 95 Taskbar -->
+  <header class="taskbar">
+    <div class="taskbar-start">
       <div class="logo">
         <div class="logo-icon"></div>
-        <span class="logo-text">5G Monitor</span>
+        <span class="logo-text">NetPulse</span>
       </div>
       <div class="status-badge" id="status">Connecting...</div>
-    </header>
+    </div>
+    <nav class="taskbar-nav" id="grafana-links-mount"></nav>
+  </header>
 
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">5G Signal</span>
-        <span class="section-badge" id="band-5g">--</span>
+  <!-- Main Control Panel Grid -->
+  <main class="control-panel">
+    <!-- Row 1: Live Monitors -->
+    <section class="panel panel-signal" id="signal-monitor">
+      <div class="panel-titlebar">
+        <span class="panel-title">Signal Monitor</span>
+        <span class="panel-badge connected" id="signal-status">Live</span>
       </div>
-      <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">SINR</div>
-          <div class="metric-value" id="sinr-5g">--</div>
-          <div class="metric-unit">dB</div>
+      <div class="panel-content">
+        <div id="signal-monitor-mount"></div>
+      </div>
+    </section>
+
+    <section class="panel panel-speedchart" id="speed-chart">
+      <div class="panel-titlebar">
+        <span class="panel-title">Speed History</span>
+        <span class="panel-badge" id="speedchart-status">Ready</span>
+      </div>
+      <div class="panel-content">
+        <div id="speedchart-mount"></div>
+      </div>
+    </section>
+
+    <!-- Row 2: Controls -->
+    <section class="panel panel-speedtest" id="speed-test">
+      <div class="panel-titlebar">
+        <span class="panel-title">Speed Test</span>
+        <span class="panel-badge" id="speedtest-status">Ready</span>
+      </div>
+      <div class="panel-content">
+        <div id="speedtest-controls-mount"></div>
+      </div>
+    </section>
+
+    <section class="panel panel-network-quality" id="network-quality">
+      <div class="panel-titlebar">
+        <span class="panel-title">Network Quality</span>
+        <span class="panel-badge" id="nq-status">Stopped</span>
+      </div>
+      <div class="panel-content">
+        <div class="nq-controls">
+          <button id="nq-toggle-btn" class="nq-btn">Start Monitoring</button>
+          <button id="nq-test-btn" class="nq-btn nq-btn-secondary">Test Now</button>
         </div>
-        <div class="metric">
-          <div class="metric-label">RSRP</div>
-          <div class="metric-value" id="rsrp-5g">--</div>
-          <div class="metric-unit">dBm</div>
+        <div id="nq-error" class="nq-error" style="display: none;"></div>
+        <div id="nq-results" class="nq-results" style="display: none;">
+          <div class="nq-target" id="nq-target-1">
+            <div class="nq-target-header">
+              <span class="nq-target-name" id="nq-name-1">--</span>
+              <span class="nq-target-host" id="nq-host-1">--</span>
+            </div>
+            <div class="nq-metrics">
+              <div class="nq-metric">
+                <span class="nq-metric-label">Loss</span>
+                <span class="nq-metric-value" id="nq-loss-1">--%</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Jitter</span>
+                <span class="nq-metric-value" id="nq-jitter-1">--</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Latency</span>
+                <span class="nq-metric-value" id="nq-latency-1">--</span>
+              </div>
+            </div>
+          </div>
+          <div class="nq-target" id="nq-target-2">
+            <div class="nq-target-header">
+              <span class="nq-target-name" id="nq-name-2">--</span>
+              <span class="nq-target-host" id="nq-host-2">--</span>
+            </div>
+            <div class="nq-metrics">
+              <div class="nq-metric">
+                <span class="nq-metric-label">Loss</span>
+                <span class="nq-metric-value" id="nq-loss-2">--%</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Jitter</span>
+                <span class="nq-metric-value" id="nq-jitter-2">--</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Latency</span>
+                <span class="nq-metric-value" id="nq-latency-2">--</span>
+              </div>
+            </div>
+          </div>
+          <div class="nq-target" id="nq-target-3">
+            <div class="nq-target-header">
+              <span class="nq-target-name" id="nq-name-3">--</span>
+              <span class="nq-target-host" id="nq-host-3">--</span>
+            </div>
+            <div class="nq-metrics">
+              <div class="nq-metric">
+                <span class="nq-metric-label">Loss</span>
+                <span class="nq-metric-value" id="nq-loss-3">--%</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Jitter</span>
+                <span class="nq-metric-value" id="nq-jitter-3">--</span>
+              </div>
+              <div class="nq-metric">
+                <span class="nq-metric-label">Latency</span>
+                <span class="nq-metric-value" id="nq-latency-3">--</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="metric">
-          <div class="metric-label">RSRQ</div>
-          <div class="metric-value" id="rsrq-5g">--</div>
-          <div class="metric-unit">dB</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">RSSI</div>
-          <div class="metric-value" id="rssi-5g">--</div>
-          <div class="metric-unit">dBm</div>
+        <div class="nq-footer">
+          <span id="nq-last-test">Last: Never</span>
+          <span id="nq-next-test"></span>
         </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">4G/LTE Signal</span>
-        <span class="section-badge" id="band-4g">--</span>
+    <section class="panel panel-congestion" id="congestion-analysis">
+      <div class="panel-titlebar">
+        <span class="panel-title">Congestion Analysis</span>
+        <span class="panel-badge" id="congestion-status">Ready</span>
       </div>
-      <div class="metrics">
-        <div class="metric">
-          <div class="metric-label">SINR</div>
-          <div class="metric-value" id="sinr-4g">--</div>
-          <div class="metric-unit">dB</div>
+      <div class="panel-content">
+        <div class="congestion-controls">
+          <select id="congestion-duration" class="report-select">
+            <option value="7" selected>7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+          <button id="congestion-btn" class="report-btn">Analyze</button>
         </div>
-        <div class="metric">
-          <div class="metric-label">RSRP</div>
-          <div class="metric-value" id="rsrp-4g">--</div>
-          <div class="metric-unit">dBm</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">RSRQ</div>
-          <div class="metric-value" id="rsrq-4g">--</div>
-          <div class="metric-unit">dB</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">RSSI</div>
-          <div class="metric-value" id="rssi-4g">--</div>
-          <div class="metric-unit">dBm</div>
+        <div id="congestion-error" class="report-error" style="display: none;"></div>
+        <div id="congestion-content" class="congestion-content" style="display: none;">
+          <div class="congestion-card">
+            <h4 class="congestion-card-title">Signal Quality</h4>
+            <div class="congestion-metric-row">
+              <div class="congestion-metric">
+                <span class="congestion-metric-value" id="cg-sinr-avg">--</span>
+                <span class="congestion-metric-label">SINR</span>
+              </div>
+              <div class="congestion-metric">
+                <span class="congestion-metric-value" id="cg-rsrp-avg">--</span>
+                <span class="congestion-metric-label">RSRP</span>
+              </div>
+              <div class="congestion-metric">
+                <span class="congestion-metric-value" id="cg-acceptable-pct">--%</span>
+                <span class="congestion-metric-label">OK</span>
+              </div>
+            </div>
+            <div class="congestion-conclusion" id="cg-signal-conclusion">--</div>
+          </div>
+
+          <div class="congestion-card">
+            <h4 class="congestion-card-title">Speed vs Signal</h4>
+            <div class="congestion-metric-row">
+              <div class="congestion-metric">
+                <span class="congestion-metric-value" id="cg-total-tests">--</span>
+                <span class="congestion-metric-label">Tests</span>
+              </div>
+              <div class="congestion-metric">
+                <span class="congestion-metric-value" id="cg-good-signal-tests">--</span>
+                <span class="congestion-metric-label">Good</span>
+              </div>
+              <div class="congestion-metric">
+                <span class="congestion-metric-value bad" id="cg-poor-speed-good-signal">--</span>
+                <span class="congestion-metric-label">Slow</span>
+              </div>
+            </div>
+            <div class="congestion-stats">
+              <div class="congestion-stat">
+                <span class="congestion-stat-label">Correlation</span>
+                <span class="congestion-stat-value" id="cg-correlation">--</span>
+              </div>
+              <div class="congestion-stat">
+                <span class="congestion-stat-label">Avg Speed</span>
+                <span class="congestion-stat-value" id="cg-avg-speed">--</span>
+              </div>
+            </div>
+            <div class="congestion-conclusion" id="cg-correlation-conclusion">--</div>
+          </div>
+
+          <div class="congestion-card">
+            <h4 class="congestion-card-title">Peak vs Off-Peak</h4>
+            <div class="congestion-time-comparison">
+              <div class="congestion-time-period">
+                <span class="congestion-time-label">Off-Peak</span>
+                <span class="congestion-time-speed good" id="cg-offpeak-speed">--</span>
+                <span class="congestion-time-signal" id="cg-offpeak-sinr">--</span>
+              </div>
+              <div class="congestion-time-vs">vs</div>
+              <div class="congestion-time-period">
+                <span class="congestion-time-label">Peak</span>
+                <span class="congestion-time-speed bad" id="cg-peak-speed">--</span>
+                <span class="congestion-time-signal" id="cg-peak-sinr">--</span>
+              </div>
+            </div>
+            <div class="congestion-ratio" id="cg-speed-ratio">Ratio: --x</div>
+            <div class="congestion-conclusion" id="cg-time-conclusion">--</div>
+          </div>
+
+          <div class="congestion-card congestion-card-conclusion">
+            <h4 class="congestion-card-title">FCC Evidence</h4>
+            <div class="congestion-evidence" id="cg-evidence-list"></div>
+            <div class="congestion-overall-conclusion" id="cg-overall-conclusion">--</div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">Connection</span>
+    <section class="panel panel-diagnostics" id="diagnostic-reports">
+      <div class="panel-titlebar">
+        <span class="panel-title">Diagnostic Report</span>
+        <span class="panel-badge" id="report-status">Ready</span>
       </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">Tower</span>
-          <span class="info-value" id="tower-id">--</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Cell</span>
-          <span class="info-value" id="cell-id">--</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Uptime</span>
-          <span class="info-value" id="uptime">--</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Status</span>
-          <span class="info-value" id="registration">--</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-header">
-        <span class="section-title">Device</span>
-      </div>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="info-label">Model</span>
-          <span class="info-value" id="model">--</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">Firmware</span>
-          <span class="info-value" id="firmware">--</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="speed-test">
-      <div class="section-header">
-        <span class="section-title">Speed Test</span>
-        <span class="section-badge" id="speedtest-status">Ready</span>
-      </div>
-      <!-- React SpeedTestControls mount here -->
-      <div id="speedtest-controls-mount"></div>
-    </section>
-
-    <section class="section" id="network-quality">
-      <div class="section-header">
-        <span class="section-title">Network Quality</span>
-        <span class="section-badge" id="nq-status">Stopped</span>
-      </div>
-      <div class="nq-controls">
-        <button id="nq-toggle-btn" class="nq-btn">Start Monitoring</button>
-        <button id="nq-test-btn" class="nq-btn nq-btn-secondary">Test Now</button>
-      </div>
-      <div id="nq-error" class="nq-error" style="display: none;"></div>
-      <div id="nq-results" class="nq-results" style="display: none;">
-        <div class="nq-target" id="nq-target-1">
-          <div class="nq-target-header">
-            <span class="nq-target-name" id="nq-name-1">--</span>
-            <span class="nq-target-host" id="nq-host-1">--</span>
-          </div>
-          <div class="nq-metrics">
-            <div class="nq-metric">
-              <span class="nq-metric-label">Packet Loss</span>
-              <span class="nq-metric-value" id="nq-loss-1">--%</span>
+      <div class="panel-content">
+        <div id="report-controls-mount"></div>
+        <div id="report-error" class="report-error" style="display: none;"></div>
+        <div id="report-content" class="report-content" style="display: none;">
+          <div class="health-section">
+            <div class="health-circle" id="health-circle">
+              <span class="health-value" id="health-value">--</span>
+              <span class="health-grade" id="health-grade">--</span>
             </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Jitter</span>
-              <span class="nq-metric-value" id="nq-jitter-1">-- ms</span>
-            </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Latency</span>
-              <span class="nq-metric-value" id="nq-latency-1">-- ms</span>
+            <div class="health-breakdown">
+              <div class="breakdown-item">
+                <span class="breakdown-label">5G</span>
+                <span class="breakdown-value" id="breakdown-5g">--%</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Stable</span>
+                <span class="breakdown-value" id="breakdown-stability">--%</span>
+              </div>
+              <div class="breakdown-item">
+                <span class="breakdown-label">Tower</span>
+                <span class="breakdown-value" id="breakdown-tower">--%</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="nq-target" id="nq-target-2">
-          <div class="nq-target-header">
-            <span class="nq-target-name" id="nq-name-2">--</span>
-            <span class="nq-target-host" id="nq-host-2">--</span>
-          </div>
-          <div class="nq-metrics">
-            <div class="nq-metric">
-              <span class="nq-metric-label">Packet Loss</span>
-              <span class="nq-metric-value" id="nq-loss-2">--%</span>
+          <div class="report-stats">
+            <div class="stat-item">
+              <span class="stat-label">SINR</span>
+              <span class="stat-value" id="stat-sinr">--</span>
             </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Jitter</span>
-              <span class="nq-metric-value" id="nq-jitter-2">-- ms</span>
+            <div class="stat-item">
+              <span class="stat-label">Drops</span>
+              <span class="stat-value" id="stat-disruptions">--</span>
             </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Latency</span>
-              <span class="nq-metric-value" id="nq-latency-2">-- ms</span>
+            <div class="stat-item">
+              <span class="stat-label">Towers</span>
+              <span class="stat-value" id="stat-tower-changes">--</span>
             </div>
-          </div>
-        </div>
-        <div class="nq-target" id="nq-target-3">
-          <div class="nq-target-header">
-            <span class="nq-target-name" id="nq-name-3">--</span>
-            <span class="nq-target-host" id="nq-host-3">--</span>
-          </div>
-          <div class="nq-metrics">
-            <div class="nq-metric">
-              <span class="nq-metric-label">Packet Loss</span>
-              <span class="nq-metric-value" id="nq-loss-3">--%</span>
+            <div class="stat-item">
+              <span class="stat-label">Tests</span>
+              <span class="stat-value" id="stat-speedtests">--</span>
             </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Jitter</span>
-              <span class="nq-metric-value" id="nq-jitter-3">-- ms</span>
-            </div>
-            <div class="nq-metric">
-              <span class="nq-metric-label">Latency</span>
-              <span class="nq-metric-value" id="nq-latency-3">-- ms</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="nq-footer">
-        <span id="nq-last-test">Last test: Never</span>
-        <span id="nq-next-test"></span>
-      </div>
-    </section>
-
-    <section class="section" id="congestion-analysis">
-      <div class="section-header">
-        <span class="section-title">Congestion Analysis</span>
-        <span class="section-badge" id="congestion-status">Ready</span>
-      </div>
-      <div class="congestion-controls">
-        <select id="congestion-duration" class="report-select">
-          <option value="7" selected>Last 7 days</option>
-          <option value="14">Last 14 days</option>
-          <option value="30">Last 30 days</option>
-        </select>
-        <button id="congestion-btn" class="report-btn">Analyze</button>
-      </div>
-      <div id="congestion-error" class="report-error" style="display: none;"></div>
-      <div id="congestion-content" class="congestion-content" style="display: none;">
-        <!-- Signal Quality Summary -->
-        <div class="congestion-card">
-          <h4 class="congestion-card-title">Signal Quality</h4>
-          <div class="congestion-metric-row">
-            <div class="congestion-metric">
-              <span class="congestion-metric-value" id="cg-sinr-avg">--</span>
-              <span class="congestion-metric-label">Avg SINR</span>
-            </div>
-            <div class="congestion-metric">
-              <span class="congestion-metric-value" id="cg-rsrp-avg">--</span>
-              <span class="congestion-metric-label">Avg RSRP</span>
-            </div>
-            <div class="congestion-metric">
-              <span class="congestion-metric-value" id="cg-acceptable-pct">--%</span>
-              <span class="congestion-metric-label">Acceptable</span>
-            </div>
-          </div>
-          <div class="congestion-conclusion" id="cg-signal-conclusion">--</div>
-        </div>
-
-        <!-- Speed vs Signal Correlation -->
-        <div class="congestion-card">
-          <h4 class="congestion-card-title">Speed vs Signal</h4>
-          <div class="congestion-metric-row">
-            <div class="congestion-metric">
-              <span class="congestion-metric-value" id="cg-total-tests">--</span>
-              <span class="congestion-metric-label">Total Tests</span>
-            </div>
-            <div class="congestion-metric">
-              <span class="congestion-metric-value" id="cg-good-signal-tests">--</span>
-              <span class="congestion-metric-label">Good Signal</span>
-            </div>
-            <div class="congestion-metric">
-              <span class="congestion-metric-value bad" id="cg-poor-speed-good-signal">--</span>
-              <span class="congestion-metric-label">Poor Speed</span>
-            </div>
-          </div>
-          <div class="congestion-stats">
-            <div class="congestion-stat">
-              <span class="congestion-stat-label">Correlation (r)</span>
-              <span class="congestion-stat-value" id="cg-correlation">--</span>
-            </div>
-            <div class="congestion-stat">
-              <span class="congestion-stat-label">Avg Speed (good signal)</span>
-              <span class="congestion-stat-value" id="cg-avg-speed">-- Mbps</span>
-            </div>
-          </div>
-          <div class="congestion-conclusion" id="cg-correlation-conclusion">--</div>
-        </div>
-
-        <!-- Time Patterns -->
-        <div class="congestion-card">
-          <h4 class="congestion-card-title">Time Patterns</h4>
-          <div class="congestion-time-comparison">
-            <div class="congestion-time-period">
-              <span class="congestion-time-label">Off-Peak (11pm-7am)</span>
-              <span class="congestion-time-speed good" id="cg-offpeak-speed">-- Mbps</span>
-              <span class="congestion-time-signal" id="cg-offpeak-sinr">SINR: --</span>
-            </div>
-            <div class="congestion-time-vs">vs</div>
-            <div class="congestion-time-period">
-              <span class="congestion-time-label">Peak (5pm-11pm)</span>
-              <span class="congestion-time-speed bad" id="cg-peak-speed">-- Mbps</span>
-              <span class="congestion-time-signal" id="cg-peak-sinr">SINR: --</span>
-            </div>
-          </div>
-          <div class="congestion-ratio" id="cg-speed-ratio">Speed Ratio: --x</div>
-          <div class="congestion-conclusion" id="cg-time-conclusion">--</div>
-        </div>
-
-        <!-- Overall Conclusion -->
-        <div class="congestion-card congestion-card-conclusion">
-          <h4 class="congestion-card-title">FCC Complaint Evidence</h4>
-          <div class="congestion-evidence" id="cg-evidence-list"></div>
-          <div class="congestion-overall-conclusion" id="cg-overall-conclusion">--</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="diagnostic-reports">
-      <div class="section-header">
-        <span class="section-title">Diagnostic Report</span>
-        <span class="section-badge" id="report-status">Ready</span>
-      </div>
-      <!-- React Base UI controls mount here -->
-      <div id="report-controls-mount"></div>
-      <div id="report-error" class="report-error" style="display: none;"></div>
-      <div id="report-content" class="report-content" style="display: none;">
-        <div class="health-section">
-          <div class="health-circle" id="health-circle">
-            <span class="health-value" id="health-value">--</span>
-            <span class="health-grade" id="health-grade">--</span>
-          </div>
-          <div class="health-breakdown">
-            <div class="breakdown-item">
-              <span class="breakdown-label">5G Signal</span>
-              <span class="breakdown-value" id="breakdown-5g">--%</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Stability</span>
-              <span class="breakdown-value" id="breakdown-stability">--%</span>
-            </div>
-            <div class="breakdown-item">
-              <span class="breakdown-label">Tower</span>
-              <span class="breakdown-value" id="breakdown-tower">--%</span>
-            </div>
-          </div>
-        </div>
-        <div class="report-stats">
-          <div class="stat-item">
-            <span class="stat-label">Avg SINR</span>
-            <span class="stat-value" id="stat-sinr">--</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Disruptions</span>
-            <span class="stat-value" id="stat-disruptions">--</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Tower Changes</span>
-            <span class="stat-value" id="stat-tower-changes">--</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Speed Tests</span>
-            <span class="stat-value" id="stat-speedtests">--</span>
           </div>
         </div>
       </div>
     </section>
-  </div>
+  </main>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

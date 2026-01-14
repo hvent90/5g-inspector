@@ -1,5 +1,5 @@
 /**
- * Button - Base UI Button component styled for T-Mobile Dashboard
+ * Button - Base UI Button component styled for NetPulse Dashboard
  *
  * Variants:
  * - primary: Magenta accent button for main actions

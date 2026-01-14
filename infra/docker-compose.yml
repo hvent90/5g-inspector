@@ -1,5 +1,5 @@
-# T-Mobile Dashboard - LGTM Stack (Loki, Grafana, Tempo, Mimir)
-# Docker Compose configuration for local development and monitoring
+# NetPulse - Simplified Stack (Grafana only)
+# Docker Compose configuration for local development
 
 version: '3.8'
 
@@ -9,147 +9,26 @@ services:
   # ============================================
   grafana:
     image: grafana/grafana:10.3.1
-    container_name: tmobile-grafana
+    container_name: netpulse-grafana
     ports:
       - "3002:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=tmobile123
+      - GF_SECURITY_ADMIN_PASSWORD=netpulse123
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
       - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
       - GF_UNIFIED_ALERTING_ENABLED=true
-      # SQLite plugin can be installed manually: grafana-cli plugins install frser-sqlite-datasource
+      - GF_INSTALL_PLUGINS=frser-sqlite-datasource
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
-      - ../signal_history.db:/var/lib/grafana/signal_history.db:ro
+      - ../apps/api/signal_history.db:/var/lib/grafana/signal_history.db:ro
     networks:
-      - tmobile-monitoring
-    depends_on:
-      - prometheus
-      - loki
-      - tempo
-      - mimir
-      - alertmanager
-    restart: unless-stopped
-
-  # ============================================
-  # Prometheus - Metrics Scraping
-  # ============================================
-  prometheus:
-    image: prom/prometheus:v2.48.1
-    container_name: tmobile-prometheus
-    ports:
-      - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-remote-write-receiver'
-      - '--enable-feature=exemplar-storage'
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus/rules:/etc/prometheus/rules:ro
-      - prometheus-data:/prometheus
-    networks:
-      - tmobile-monitoring
-    depends_on:
-      - alertmanager
-    restart: unless-stopped
-
-  # ============================================
-  # Alertmanager - Alert Routing and Notifications
-  # ============================================
-  alertmanager:
-    image: prom/alertmanager:v0.26.0
-    container_name: tmobile-alertmanager
-    ports:
-      - "9093:9093"
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
-      - '--web.external-url=http://localhost:9093'
-    volumes:
-      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager-data:/alertmanager
-    networks:
-      - tmobile-monitoring
-    restart: unless-stopped
-
-  # ============================================
-  # Mimir - Long-term Metrics Storage (Prometheus-compatible)
-  # ============================================
-  mimir:
-    image: grafana/mimir:2.11.0
-    container_name: tmobile-mimir
-    ports:
-      - "9009:9009"
-    command:
-      - '-config.file=/etc/mimir/mimir.yml'
-    volumes:
-      - ./mimir/mimir.yml:/etc/mimir/mimir.yml:ro
-      - mimir-data:/data
-    networks:
-      - tmobile-monitoring
-    restart: unless-stopped
-
-  # ============================================
-  # Loki - Log Aggregation
-  # ============================================
-  loki:
-    image: grafana/loki:2.9.3
-    container_name: tmobile-loki
-    ports:
-      - "3100:3100"
-    command: -config.file=/etc/loki/loki.yml
-    volumes:
-      - ./loki/loki.yml:/etc/loki/loki.yml:ro
-      - loki-data:/loki
-    networks:
-      - tmobile-monitoring
-    restart: unless-stopped
-
-  # ============================================
-  # Tempo - Distributed Tracing
-  # ============================================
-  tempo:
-    image: grafana/tempo:2.3.1
-    container_name: tmobile-tempo
-    ports:
-      - "3200:3200"   # Tempo HTTP
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    command: -config.file=/etc/tempo/tempo.yml
-    volumes:
-      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
-      - tempo-data:/tmp/tempo
-    networks:
-      - tmobile-monitoring
-    restart: unless-stopped
-
-  # ============================================
-  # T-Mobile Gateway Exporter - Custom Metrics
-  # ============================================
-  gateway-exporter:
-    build:
-      context: ./exporter
-      dockerfile: Dockerfile
-    container_name: tmobile-gateway-exporter
-    ports:
-      - "9100:9100"
-    environment:
-      - GATEWAY_URL=http://192.168.12.1/TMI/v1/gateway?get=all
-      - SCRAPE_INTERVAL=5
-      - EXPORTER_PORT=9100
-    networks:
-      - tmobile-monitoring
+      - netpulse-monitoring
     restart: unless-stopped
 
 # ============================================
@@ -158,22 +37,12 @@ services:
 volumes:
   grafana-data:
     driver: local
-  prometheus-data:
-    driver: local
-  alertmanager-data:
-    driver: local
-  mimir-data:
-    driver: local
-  loki-data:
-    driver: local
-  tempo-data:
-    driver: local
 
 # ============================================
 # Network configuration
 # ============================================
 networks:
-  tmobile-monitoring:
+  netpulse-monitoring:
     driver: bridge
     ipam:
       config:

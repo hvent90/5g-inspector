@@ -1,5 +1,5 @@
-# T-Mobile Dashboard - Full Stack Startup Script
-# Starts infra (containers), backend, and frontend with LAN access
+# NetPulse - Full Stack Startup Script
+# Starts infra (Grafana container), backend, and frontend with LAN access
 # Press Ctrl+C to gracefully stop all services
 
 $ErrorActionPreference = "Stop"
@@ -44,10 +44,11 @@ function Stop-AllServices {
         Remove-Job -Job $script:BackendJob -Force -ErrorAction SilentlyContinue
     }
 
-    # Stop infra containers
-    Write-Host "Stopping infra containers..." -ForegroundColor Yellow
+    # Stop Grafana container
+    Write-Host "Stopping Grafana container..." -ForegroundColor Yellow
     Push-Location $RepoRoot
-    & podman compose -f infra/docker-compose.yml down 2>$null
+    # Use cmd /c to prevent PowerShell from treating podman-compose stderr messages as errors
+    cmd /c "podman compose -f infra/docker-compose.yml down 2>&1" | Out-Null
     Pop-Location
 
     Write-Host "All services stopped." -ForegroundColor Green
@@ -57,50 +58,54 @@ function Stop-AllServices {
 $null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action { Stop-AllServices }
 
 try {
-    Write-Banner "T-Mobile Dashboard - Full Stack" "Green"
+    Write-Banner "NetPulse - Full Stack" "Green"
 
     # Step 1: Check/Start Podman machine
     Write-Host "[1/4] Checking Podman machine..." -ForegroundColor Cyan
-    $machineStatus = & podman machine list --format "{{.Running}}" 2>$null | Select-Object -First 1
-    if ($machineStatus -ne "true" -and $machineStatus -ne "Running") {
+
+    # Helper function to check if machine is actually running
+    function Test-PodmanMachineRunning {
+        $status = & podman machine list --format "{{.Running}}" 2>$null | Select-Object -First 1
+        return ($status -eq "true" -or $status -eq "Running")
+    }
+
+    if (-not (Test-PodmanMachineRunning)) {
         Write-Host "      Starting Podman machine..." -ForegroundColor Yellow
-        $startResult = & podman machine start 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            # Check if it's just "already running" - that's OK
-            if ($startResult -match "already running") {
-                Write-Host "      Podman machine already running." -ForegroundColor Gray
-            } else {
-                throw "Failed to start Podman machine: $startResult"
-            }
-        } else {
+        # Run podman machine start, ignoring stderr warnings like "screen size is bogus"
+        # and "already running" messages. Use cmd /c to prevent PowerShell's
+        # ErrorActionPreference from treating stderr as terminating errors.
+        cmd /c "podman machine start 2>&1" | Out-Null
+
+        # Wait for machine to be ready (up to 30 seconds)
+        $attempts = 0
+        $maxAttempts = 10
+        while (-not (Test-PodmanMachineRunning) -and $attempts -lt $maxAttempts) {
             Start-Sleep -Seconds 3
+            $attempts++
+            Write-Host "      Waiting for Podman machine... (attempt $attempts/$maxAttempts)" -ForegroundColor Gray
+        }
+
+        if (-not (Test-PodmanMachineRunning)) {
+            throw "Podman machine failed to start after $maxAttempts attempts. Try: podman machine stop; podman machine start"
         }
     }
     Write-Host "      Podman machine is running." -ForegroundColor Green
 
-    # Step 2: Configure Prometheus with host IP and start infra containers
-    Write-Host "[2/4] Starting infra containers..." -ForegroundColor Cyan
-    $lanIP = Get-LanIP
-
-    # Update Prometheus config with the host IP so it can scrape the backend
-    $promConfig = "$RepoRoot/infra/prometheus/prometheus.yml"
-    $content = Get-Content $promConfig -Raw
-    $content = $content -replace "targets: \['[^']+:8080'\]", "targets: ['${lanIP}:8080']"
-    Set-Content $promConfig $content
-    Write-Host "      Configured Prometheus to scrape backend at ${lanIP}:8080" -ForegroundColor Gray
+    # Step 2: Start Grafana container
+    Write-Host "[2/4] Starting Grafana container..." -ForegroundColor Cyan
 
     Push-Location $RepoRoot
-    & podman compose -f infra/docker-compose.yml up -d
+    # Use cmd /c to prevent PowerShell from treating podman-compose stderr messages as errors
+    cmd /c "podman compose -f infra/docker-compose.yml up -d 2>&1"
     Pop-Location
-    Write-Host "      Infra containers started." -ForegroundColor Green
+    Write-Host "      Grafana container started." -ForegroundColor Green
 
     # Step 3: Start backend
-    Write-Host "[3/4] Starting backend (port 8080)..." -ForegroundColor Cyan
+    Write-Host "[3/4] Starting backend (port 3001)..." -ForegroundColor Cyan
     $script:BackendJob = Start-Job -ScriptBlock {
         param($root)
-        Set-Location "$root/backend"
-        $env:LOG_LEVEL = "WARNING"
-        & uv run python -m tmobile_dashboard.main 2>&1
+        Set-Location "$root/apps/api"
+        & bun run dev 2>&1
     } -ArgumentList $RepoRoot
     Start-Sleep -Seconds 2
     Write-Host "      Backend started." -ForegroundColor Green
@@ -120,12 +125,12 @@ try {
     Write-Banner "Stack is running!" "Green"
     Write-Host "Local access:" -ForegroundColor White
     Write-Host "  Frontend:     http://localhost:5173" -ForegroundColor Cyan
-    Write-Host "  Backend API:  http://localhost:8080" -ForegroundColor Cyan
-    Write-Host "  Grafana:      http://localhost:3002  (admin/tmobile123)" -ForegroundColor Cyan
+    Write-Host "  Backend API:  http://localhost:3001" -ForegroundColor Cyan
+    Write-Host "  Grafana:      http://localhost:3002  (admin/netpulse123)" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "LAN access (from other devices):" -ForegroundColor White
     Write-Host "  Frontend:     http://${lanIP}:5173" -ForegroundColor Cyan
-    Write-Host "  Backend API:  http://${lanIP}:8080" -ForegroundColor Cyan
+    Write-Host "  Backend API:  http://${lanIP}:3001" -ForegroundColor Cyan
     Write-Host "  Grafana:      http://${lanIP}:3002" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Press Ctrl+C to stop all services..." -ForegroundColor Yellow

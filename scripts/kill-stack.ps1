@@ -1,4 +1,4 @@
-# T-Mobile Dashboard - Kill Zombie Processes
+# NetPulse - Kill Zombie Processes
 # Finds and terminates any orphaned processes from the stack
 
 $ErrorActionPreference = "SilentlyContinue"
@@ -52,22 +52,17 @@ function Kill-ProcessByPattern {
     return $false
 }
 
-Write-Banner "T-Mobile Dashboard - Cleanup Zombie Processes" "Yellow"
+Write-Banner "NetPulse - Cleanup Zombie Processes" "Yellow"
 
 $foundAny = $false
 
-# 1. Kill Python backend processes
-Write-Host "[1/5] Checking for Python backend processes..." -ForegroundColor Cyan
-if (Kill-ProcessByPattern "tmobile_dashboard" "backend") { $foundAny = $true }
+# 1. Kill API backend processes (Bun)
+Write-Host "[1/4] Checking for API backend processes..." -ForegroundColor Cyan
+if (Kill-ProcessByPattern "apps.api" "api backend") { $foundAny = $true }
 else { Write-Host "      None found." -ForegroundColor Green }
 
-# 2. Kill uvicorn processes
-Write-Host "[2/5] Checking for uvicorn processes..." -ForegroundColor Cyan
-if (Kill-ProcessByPattern "uvicorn" "uvicorn") { $foundAny = $true }
-else { Write-Host "      None found." -ForegroundColor Green }
-
-# 3. Kill Vite/Node processes (frontend dev server)
-Write-Host "[3/5] Checking for Vite/Node processes..." -ForegroundColor Cyan
+# 2. Kill Vite/Node processes (frontend dev server)
+Write-Host "[2/4] Checking for Vite/Node processes..." -ForegroundColor Cyan
 $viteKilled = $false
 # Look for node processes running vite
 $nodeProcesses = Get-WmiObject Win32_Process | Where-Object {
@@ -84,8 +79,8 @@ if ($nodeProcesses) {
 }
 if (-not $viteKilled) { Write-Host "      None found." -ForegroundColor Green }
 
-# 4. Kill Bun processes
-Write-Host "[4/5] Checking for Bun processes..." -ForegroundColor Cyan
+# 3. Kill Bun processes
+Write-Host "[3/4] Checking for Bun processes..." -ForegroundColor Cyan
 $bunProcesses = Get-Process -Name "bun" -ErrorAction SilentlyContinue
 if ($bunProcesses) {
     Write-Host "  Found $($bunProcesses.Count) Bun process(es)" -ForegroundColor Yellow
@@ -98,16 +93,10 @@ if ($bunProcesses) {
     Write-Host "      None found." -ForegroundColor Green
 }
 
-# 5. Stop and remove Docker/Podman containers
-Write-Host "[5/5] Checking for stack containers..." -ForegroundColor Cyan
+# 4. Stop and remove Docker/Podman containers (Grafana only)
+Write-Host "[4/4] Checking for stack containers..." -ForegroundColor Cyan
 $containers = @(
-    "tmobile-grafana",
-    "tmobile-prometheus",
-    "tmobile-alertmanager",
-    "tmobile-mimir",
-    "tmobile-loki",
-    "tmobile-tempo",
-    "tmobile-gateway-exporter"
+    "netpulse-grafana"
 )
 
 $containerRuntime = $null
@@ -146,7 +135,7 @@ Write-Host ""
 
 # Show what's still listening on our ports
 Write-Host "Port status:" -ForegroundColor Cyan
-$ports = @(5173, 8080, 3002, 9090, 9093, 9100)
+$ports = @(5173, 3001, 3002)
 foreach ($port in $ports) {
     $conn = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($conn) {

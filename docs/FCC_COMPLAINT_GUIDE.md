@@ -2,7 +2,7 @@
 
 ## T-Mobile Home Internet Service Quality Issues
 
-This guide walks you through the process of filing an FCC informal complaint against T-Mobile for failing to deliver advertised internet service speeds. Use this in conjunction with the T-Mobile Dashboard's automated evidence collection and report generation tools.
+This guide walks you through the process of filing an FCC informal complaint against T-Mobile for failing to deliver advertised internet service speeds. Use this in conjunction with the NetPulse Dashboard's automated evidence collection and report generation tools.
 
 ---
 
@@ -112,7 +112,7 @@ You will need:
 
 ## Preparing Your Evidence Package
 
-The T-Mobile Dashboard generates comprehensive evidence reports. Use these API endpoints to generate your evidence:
+The NetPulse Dashboard generates comprehensive evidence reports. Use these API endpoints to generate your evidence:
 
 ### Generate FCC Complaint Report
 
@@ -413,7 +413,7 @@ Include tests from different:
 
 ## Dashboard Integration
 
-The T-Mobile Dashboard automates evidence collection and report generation:
+The NetPulse Dashboard automates evidence collection and report generation:
 
 ### API Endpoints
 
@@ -467,4 +467,4 @@ https://www.t-mobile.com/home-internet/policies/internet-service/network-managem
 
 ---
 
-*This guide was generated as part of the T-Mobile Home Internet Dashboard project for FCC complaint preparation.*
+*This guide was generated as part of the NetPulse (Home Internet Monitoring) project for FCC complaint preparation.*

@@ -1,0 +1,1192 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "sqlite"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "name": "High Packet Loss",
+        "rawQuery": "SELECT timestamp_unix * 1000 as time, 'Packet Loss: ' || ROUND(packet_loss_percent, 1) || '%' as text FROM speedtest_results WHERE packet_loss_percent > 5",
+        "hide": false
+      }
+    ]
+  },
+  "description": "Speed test metrics from SQLite historical database - download/upload speeds, latency, packet loss, and jitter over time",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": ["tmobile", "speedtest"],
+      "targetBlank": false,
+      "title": "Prometheus Speedtest",
+      "tooltip": "View real-time speedtest metrics",
+      "type": "dashboards",
+      "url": ""
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "Current Performance",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Most recent download speed from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 500,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 25},
+              {"color": "yellow", "value": 50},
+              {"color": "green", "value": 100}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1},
+      "id": 1,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT download_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT download_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Download Speed",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Most recent upload speed from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 5},
+              {"color": "yellow", "value": 10},
+              {"color": "green", "value": 20}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 1},
+      "id": 2,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT upload_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT upload_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Upload Speed",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Most recent ping latency from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 30},
+              {"color": "orange", "value": 50},
+              {"color": "red", "value": 100}
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 1},
+      "id": 3,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT ping_ms FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT ping_ms FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Ping Latency",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Total speed tests recorded in database",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "blue", "value": null}
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 3, "x": 18, "y": 1},
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT COUNT(*) as total_tests FROM speedtest_results",
+          "rawSql": "SELECT COUNT(*) as total_tests FROM speedtest_results",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Tests",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Time of most recent speed test",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "dateTimeFromNow"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 3, "x": 21, "y": 1},
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT timestamp_unix * 1000 as last_test FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT timestamp_unix * 1000 as last_test FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Last Test",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Average jitter from recent tests",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 10},
+              {"color": "orange", "value": 20},
+              {"color": "red", "value": 50}
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 3, "x": 21, "y": 5},
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT jitter_ms FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT jitter_ms FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Jitter",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Latest packet loss percentage",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 5}
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 3, "x": 18, "y": 5},
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT COALESCE(packet_loss_percent, 0) as packet_loss FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "rawSql": "SELECT COALESCE(packet_loss_percent, 0) as packet_loss FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Packet Loss",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "id": 101,
+      "panels": [],
+      "title": "Speed History",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Download and upload speeds over time from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Download"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#73BF69", "mode": "fixed"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Upload"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#5794F2", "mode": "fixed"}}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "B"
+        }
+      ],
+      "title": "Speed Test History (SQLite)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "id": 102,
+      "panels": [],
+      "title": "Latency Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Ping latency and jitter over time from SQLite",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Ping"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#F2CC0C", "mode": "fixed"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Jitter"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#FF9830", "mode": "fixed"}}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 21},
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
+          "refId": "B"
+        }
+      ],
+      "title": "Latency History (SQLite)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Speed tests by network context (baseline, idle, light, busy)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 21},
+      "id": 9,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT network_context as 'Context', COUNT(*) as 'Tests', ROUND(AVG(download_mbps), 1) as 'Avg Download' FROM speedtest_results WHERE network_context IS NOT NULL GROUP BY network_context ORDER BY 'Avg Download' DESC",
+          "rawSql": "SELECT network_context as 'Context', COUNT(*) as 'Tests', ROUND(AVG(download_mbps), 1) as 'Avg Download' FROM speedtest_results WHERE network_context IS NOT NULL GROUP BY network_context ORDER BY 'Avg Download' DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Performance by Network Context",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 104,
+      "panels": [],
+      "title": "Packet Loss",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Packet loss percentage over time from speed tests",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 8,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "orange", "value": 3},
+              {"color": "red", "value": 5}
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Packet Loss"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#F2495C", "mode": "fixed"}}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30},
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "lastNotNull", "min", "max"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT timestamp_unix as time, COALESCE(packet_loss_percent, 0) as value, 'Packet Loss' as metric FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix as time, COALESCE(packet_loss_percent, 0) as value, 'Packet Loss' as metric FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "A",
+          "format": "time_series"
+        }
+      ],
+      "title": "Packet Loss Over Time",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
+      "id": 103,
+      "panels": [],
+      "title": "Statistics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Average download speed (all time)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 25},
+              {"color": "yellow", "value": 50},
+              {"color": "green", "value": 100}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 39},
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT ROUND(AVG(download_mbps), 1) as avg_download FROM speedtest_results",
+          "rawSql": "SELECT ROUND(AVG(download_mbps), 1) as avg_download FROM speedtest_results",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Download (All Time)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Average upload speed (all time)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "orange", "value": 5},
+              {"color": "yellow", "value": 10},
+              {"color": "green", "value": 20}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 39},
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT ROUND(AVG(upload_mbps), 1) as avg_upload FROM speedtest_results",
+          "rawSql": "SELECT ROUND(AVG(upload_mbps), 1) as avg_upload FROM speedtest_results",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Upload (All Time)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Average ping latency (all time)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 30},
+              {"color": "orange", "value": 50},
+              {"color": "red", "value": 100}
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 39},
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT ROUND(AVG(ping_ms), 1) as avg_ping FROM speedtest_results",
+          "rawSql": "SELECT ROUND(AVG(ping_ms), 1) as avg_ping FROM speedtest_results",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Ping (All Time)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Peak download speed recorded",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          },
+          "unit": "Mbps"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 39},
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT MAX(download_mbps) as peak_download FROM speedtest_results",
+          "rawSql": "SELECT MAX(download_mbps) as peak_download FROM speedtest_results",
+          "refId": "A"
+        }
+      ],
+      "title": "Peak Download",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "sqlite"
+      },
+      "description": "Recent speed test results table",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Time"},
+            "properties": [
+              {"id": "custom.width", "value": 180}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Download"},
+            "properties": [
+              {"id": "unit", "value": "Mbps"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}},
+              {"id": "color", "value": {"mode": "continuous-GrYlRd"}},
+              {"id": "max", "value": 500}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Upload"},
+            "properties": [
+              {"id": "unit", "value": "Mbps"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}},
+              {"id": "color", "value": {"mode": "continuous-GrYlRd"}},
+              {"id": "max", "value": 100}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Ping"},
+            "properties": [
+              {"id": "unit", "value": "ms"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}},
+              {"id": "color", "value": {"mode": "continuous-RdYlGr"}},
+              {"id": "max", "value": 100}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Packet Loss"},
+            "properties": [
+              {"id": "unit", "value": "percent"},
+              {"id": "custom.cellOptions", "value": {"mode": "gradient", "type": "gauge"}},
+              {"id": "color", "value": {"mode": "continuous-RdYlGr"}},
+              {"id": "max", "value": 10},
+              {"id": "decimals", "value": 1}
+            ]
+          }
+        ]
+      },
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 43},
+      "id": 14,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": []
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "sqlite"
+          },
+          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch', 'localtime') as 'Time', ROUND(download_mbps, 1) as 'Download', ROUND(upload_mbps, 1) as 'Upload', ROUND(ping_ms, 1) as 'Ping', COALESCE(ROUND(packet_loss_percent, 1), 0) as 'Packet Loss', COALESCE(network_context, '-') as 'Context', COALESCE(tool, '-') as 'Tool' FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 20",
+          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch', 'localtime') as 'Time', ROUND(download_mbps, 1) as 'Download', ROUND(upload_mbps, 1) as 'Upload', ROUND(ping_ms, 1) as 'Ping', COALESCE(ROUND(packet_loss_percent, 1), 0) as 'Packet Loss', COALESCE(network_context, '-') as 'Context', COALESCE(tool, '-') as 'Tool' FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Speed Tests",
+      "type": "table"
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["tmobile", "speedtest", "sqlite", "netpulse"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "NetPulse Speedtest (SQLite)",
+  "uid": "netpulse-speedtest-sqlite",
+  "version": 1,
+  "weekStart": ""
+}

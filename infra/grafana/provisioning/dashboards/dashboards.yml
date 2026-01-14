@@ -1,10 +1,10 @@
 apiVersion: 1
 
 providers:
-  - name: 'T-Mobile Dashboard'
+  - name: 'NetPulse Dashboard'
     orgId: 1
-    folder: 'T-Mobile'
-    folderUid: 'tmobile'
+    folder: 'NetPulse'
+    folderUid: 'netpulse'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30

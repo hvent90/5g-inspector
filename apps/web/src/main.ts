@@ -1,5 +1,5 @@
 import "./styles.css";
-import { formatSignalStrength, formatSpeed } from "@tmobile-dashboard/shared";
+import { formatSignalStrength, formatSpeed } from "@netpulse/shared";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./components";
@@ -137,6 +137,20 @@ async function refresh() {
 
 // React mounting for Base UI components
 function initReactComponents(): void {
+  // Mount Signal Monitor
+  const signalMount = $("signal-monitor-mount");
+  if (signalMount) {
+    const root = createRoot(signalMount);
+    root.render(createElement(App, { component: 'signal' }));
+  }
+
+  // Mount Speed Chart
+  const speedchartMount = $("speedchart-mount");
+  if (speedchartMount) {
+    const root = createRoot(speedchartMount);
+    root.render(createElement(App, { component: 'speedchart' }));
+  }
+
   // Mount Report Controls
   const reportMount = $("report-controls-mount");
   if (reportMount) {
@@ -149,6 +163,13 @@ function initReactComponents(): void {
   if (speedtestMount) {
     const root = createRoot(speedtestMount);
     root.render(createElement(App, { component: 'speedtest' }));
+  }
+
+  // Mount Grafana Links
+  const grafanaMount = $("grafana-links-mount");
+  if (grafanaMount) {
+    const root = createRoot(grafanaMount);
+    root.render(createElement(App, { component: 'grafana' }));
   }
 }
 

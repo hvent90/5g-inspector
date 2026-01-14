@@ -7,18 +7,6 @@ out/
 out-tsc/
 *.tsbuildinfo
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.venv/
-venv/
-.pytest_cache/
-.ruff_cache/
-*.egg-info/
-.eggs/
-
 # IDE
 .idea/
 .vscode/
@@ -55,6 +43,7 @@ bun.lockb
 # Temp
 tmp/
 .tmp/
+tmpclaude-*
 
 # Database files (keep directory, ignore contents)
 apps/api/data/*.db
