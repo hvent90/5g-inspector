@@ -452,20 +452,3 @@ export const DisruptionServiceLive = (
     })
   )
 
-// ============================================
-// Convenience Layer with SignalRepository
-// ============================================
-
-import { SignalRepositoryLive, makeSqliteConnectionLayer } from "./SignalRepository"
-
-/**
- * Create a fully-wired DisruptionService with SQLite backing.
- */
-export const makeDisruptionServiceLayer = (
-  dbPath: string,
-  config: DisruptionConfig = defaultConfig
-) => {
-  const sqliteLayer = makeSqliteConnectionLayer(dbPath)
-  const repoLayer = Layer.provide(SignalRepositoryLive, sqliteLayer)
-  return Layer.provide(DisruptionServiceLive(config), repoLayer)
-}

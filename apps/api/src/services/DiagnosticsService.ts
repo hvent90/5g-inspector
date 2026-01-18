@@ -875,17 +875,3 @@ export const DiagnosticsServiceLive = Layer.effect(
   })
 )
 
-// ============================================
-// Convenience Layer with SignalRepository
-// ============================================
-
-import { SignalRepositoryLive, makeSqliteConnectionLayer } from "./SignalRepository"
-
-/**
- * Create a fully-wired DiagnosticsService with SQLite backing.
- */
-export const makeDiagnosticsServiceLayer = (dbPath: string) => {
-  const sqliteLayer = makeSqliteConnectionLayer(dbPath)
-  const repoLayer = Layer.provide(SignalRepositoryLive, sqliteLayer)
-  return Layer.provide(DiagnosticsServiceLive, repoLayer)
-}

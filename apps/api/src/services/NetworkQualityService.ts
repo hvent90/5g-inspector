@@ -9,12 +9,12 @@
  * Provides:
  * - Start/stop monitoring with configurable interval
  * - Manual trigger for immediate tests
- * - Results storage in SQLite
+ * - Results storage in PostgreSQL
  * - Config and stats retrieval
  */
 
 import { Context, Effect, Layer, Ref, Schedule, Fiber, Schema } from "effect"
-import { SqliteConnection, RepositoryError } from "./SignalRepository.js"
+import { SqlClient, SqlError } from "@effect/sql"
 import * as ChildProcess from "node:child_process"
 import * as os from "node:os"
 import * as fs from "node:fs"
@@ -88,7 +88,7 @@ export type NetworkQualityResultRecord = typeof NetworkQualityResultRecord.Type
 export class NetworkQualityError {
   readonly _tag = "NetworkQualityError"
   constructor(
-    readonly type: "execution" | "parse" | "timeout" | "config",
+    readonly type: "execution" | "parse" | "timeout" | "config" | "db",
     readonly message: string,
     readonly cause?: unknown
   ) {}
@@ -319,7 +319,7 @@ export interface NetworkQualityServiceShape {
   /**
    * Get recent results
    */
-  readonly getResults: (limit?: number) => Effect.Effect<readonly NetworkQualityResult[], RepositoryError>
+  readonly getResults: (limit?: number) => Effect.Effect<readonly NetworkQualityResult[], NetworkQualityError>
 
   /**
    * Start monitoring
@@ -334,7 +334,7 @@ export interface NetworkQualityServiceShape {
   /**
    * Trigger immediate test
    */
-  readonly trigger: () => Effect.Effect<readonly NetworkQualityResult[], NetworkQualityError | RepositoryError>
+  readonly trigger: () => Effect.Effect<readonly NetworkQualityResult[], NetworkQualityError>
 }
 
 // ============================================
@@ -353,28 +353,31 @@ export class NetworkQualityService extends Context.Tag("NetworkQualityService")<
 export const NetworkQualityServiceLive = Layer.effect(
   NetworkQualityService,
   Effect.gen(function* () {
-    const { db } = yield* SqliteConnection
+    const sql = yield* SqlClient.SqlClient
 
     // Initialize table
-    db.exec(`
+    yield* sql.unsafe(`
       CREATE TABLE IF NOT EXISTS network_quality_results (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         timestamp TEXT NOT NULL,
-        timestamp_unix REAL NOT NULL,
+        timestamp_unix DOUBLE PRECISION NOT NULL,
         target_host TEXT NOT NULL,
         target_name TEXT,
-        ping_ms REAL,
-        jitter_ms REAL NOT NULL,
-        packet_loss_percent REAL NOT NULL,
+        ping_ms DOUBLE PRECISION,
+        jitter_ms DOUBLE PRECISION NOT NULL,
+        packet_loss_percent DOUBLE PRECISION NOT NULL,
         status TEXT NOT NULL,
         error_message TEXT
       )
     `)
 
     // Create index for timestamp queries
-    db.exec(`
+    yield* sql.unsafe(`
       CREATE INDEX IF NOT EXISTS idx_nq_timestamp ON network_quality_results(timestamp_unix DESC)
     `)
+
+    const mapSqlError = (e: SqlError.SqlError) =>
+      new NetworkQualityError("db", `Database error: ${e.message}`, e)
 
     // State
     const configRef = yield* Ref.make<NetworkQualityConfig>(loadConfig())
@@ -400,29 +403,18 @@ export const NetworkQualityServiceLive = Layer.effect(
         results.push(result)
 
         // Store in database
-        yield* Effect.try({
-          try: () => {
-            const stmt = db.prepare(`
-              INSERT INTO network_quality_results (
-                timestamp, timestamp_unix, target_host, target_name,
-                ping_ms, jitter_ms, packet_loss_percent, status, error_message
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `)
-            stmt.run(
-              result.timestamp,
-              result.timestamp_unix,
-              result.target_host,
-              result.target_name,
-              result.ping_ms,
-              result.jitter_ms,
-              result.packet_loss_percent,
-              result.status,
-              result.error_message ?? null
-            )
-          },
-          catch: (e) =>
-            new RepositoryError("insertNetworkQuality", `Failed to insert result: ${e}`, e),
-        })
+        yield* sql`
+          INSERT INTO network_quality_results (
+            timestamp, timestamp_unix, target_host, target_name,
+            ping_ms, jitter_ms, packet_loss_percent, status, error_message
+          ) VALUES (
+            ${result.timestamp}, ${result.timestamp_unix},
+            ${result.target_host}, ${result.target_name},
+            ${result.ping_ms ?? null}, ${result.jitter_ms},
+            ${result.packet_loss_percent}, ${result.status},
+            ${result.error_message ?? null}
+          )
+        `.pipe(Effect.mapError(mapSqlError))
       }
 
       yield* Ref.update(testsCompletedRef, (n) => n + 1)
@@ -475,31 +467,22 @@ export const NetworkQualityServiceLive = Layer.effect(
 
       getResults: (limit = 100) =>
         Effect.gen(function* () {
-          const rows = yield* Effect.try({
-            try: () =>
-              db
-                .prepare(
-                  `
-                  SELECT * FROM network_quality_results
-                  ORDER BY timestamp_unix DESC
-                  LIMIT ?
-                `
-                )
-                .all(limit) as Array<{
-                id: number
-                timestamp: string
-                timestamp_unix: number
-                target_host: string
-                target_name: string | null
-                ping_ms: number | null
-                jitter_ms: number
-                packet_loss_percent: number
-                status: string
-                error_message: string | null
-              }>,
-            catch: (e) =>
-              new RepositoryError("queryNetworkQuality", `Query failed: ${e}`, e),
-          })
+          const rows = (yield* sql`
+            SELECT * FROM network_quality_results
+            ORDER BY timestamp_unix DESC
+            LIMIT ${limit}
+          `.pipe(Effect.mapError(mapSqlError))) as Array<{
+            id: number
+            timestamp: string
+            timestamp_unix: number
+            target_host: string
+            target_name: string | null
+            ping_ms: number | null
+            jitter_ms: number
+            packet_loss_percent: number
+            status: string
+            error_message: string | null
+          }>
 
           return rows.map((row) => ({
             target_host: row.target_host,

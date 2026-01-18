@@ -60,11 +60,8 @@ import {
 } from "./routes/index.js"
 import { GatewayServiceTag, GatewayServiceLive } from "./services/GatewayService.js"
 import { GatewayConfigLive } from "./config/GatewayConfig.js"
-import {
-  SignalRepository,
-  SignalRepositoryLive,
-  makeSqliteConnectionLayer,
-} from "./services/SignalRepository.js"
+import { SignalRepository, SignalRepositoryLive } from "./services/SignalRepository.js"
+import { PgClientLive } from "./db/config.js"
 import { AlertService, AlertServiceLive } from "./services/AlertService.js"
 import { SpeedtestService, SpeedtestServiceLive } from "./services/SpeedtestService.js"
 import { SchedulerService, SchedulerServiceLive } from "./services/SchedulerService.js"
@@ -73,11 +70,9 @@ import { NetworkQualityService, NetworkQualityServiceLive } from "./services/Net
 
 // Server configuration
 const PORT = Number(process.env.PORT ?? 3001)
-const DB_PATH = process.env.DB_PATH ?? "signal_history.db"
 
-// Database and repository layers
-const SqliteLayer = makeSqliteConnectionLayer(DB_PATH)
-const RepositoryLayer = Layer.provide(SignalRepositoryLive, SqliteLayer)
+// Database and repository layers - using PostgreSQL
+const RepositoryLayer = Layer.provide(SignalRepositoryLive, PgClientLive)
 
 // Gateway service layer with all dependencies
 const GatewayLayer = GatewayServiceLive.pipe(
@@ -98,8 +93,8 @@ const SchedulerLayer = Layer.provide(SchedulerServiceLive, SpeedtestLayer)
 // Diagnostics service layer
 const DiagnosticsLayer = Layer.provide(DiagnosticsServiceLive, RepositoryLayer)
 
-// Network Quality service layer
-const NetworkQualityLayer = Layer.provide(NetworkQualityServiceLive, SqliteLayer)
+// Network Quality service layer - now uses PostgreSQL via SignalRepository
+const NetworkQualityLayer = Layer.provide(NetworkQualityServiceLive, RepositoryLayer)
 
 // Combined service layer
 const ServicesLayer = Layer.mergeAll(
@@ -188,6 +183,7 @@ const startGatewayPolling = Effect.gen(function* () {
 const main = Effect.gen(function* () {
   // Log startup info
   yield* Effect.log(`NetPulse API server starting on http://localhost:${PORT}`)
+  yield* Effect.log(`Database: PostgreSQL (native Grafana datasource)`)
   yield* Effect.all([
     Effect.log("Consolidated API endpoints:"),
     Effect.log("  GET  /health, /api/signal, /api/signal/history"),

@@ -1,61 +1,26 @@
 # Grafana Datasource Provisioning for NetPulse
-# Simplified to use SQLite as primary data source
+# Using PostgreSQL - native Grafana datasource (no plugins needed)
 
 apiVersion: 1
 
 datasources:
-  # SQLite - Primary data source for signal history and disruption events
-  # Requires: grafana-cli plugins install frser-sqlite-datasource
-  - name: SQLite
-    type: frser-sqlite-datasource
+  # PostgreSQL - Primary data source for signal history and disruption events
+  # Native Grafana support - no third-party plugins required
+  - name: PostgreSQL
+    type: postgres
     access: proxy
-    uid: sqlite
+    uid: postgres
+    url: postgres:5432
+    user: netpulse
+    database: netpulse
     isDefault: true
     editable: false
+    secureJsonData:
+      password: netpulse_secret
     jsonData:
-      path: /var/lib/grafana/signal_history.db
-
-  # Loki - Log aggregation
-  - name: Loki
-    type: loki
-    access: proxy
-    uid: loki
-    url: http://loki:3100
-    editable: false
-    jsonData:
-      maxLines: 1000
-      derivedFields:
-        - name: TraceID
-          matcherRegex: "traceID=(\\w+)"
-          url: "$${__value.raw}"
-          datasourceUid: tempo
-
-  # Tempo - Distributed tracing
-  - name: Tempo
-    type: tempo
-    access: proxy
-    uid: tempo
-    url: http://tempo:3200
-    editable: false
-    jsonData:
-      httpMethod: GET
-      tracesToLogsV2:
-        datasourceUid: loki
-        spanStartTimeShift: '-1h'
-        spanEndTimeShift: '1h'
-        filterByTraceID: true
-        filterBySpanID: true
-      nodeGraph:
-        enabled: true
-      lokiSearch:
-        datasourceUid: loki
-
-  # Alertmanager - Alert management
-  - name: Alertmanager
-    type: alertmanager
-    access: proxy
-    uid: alertmanager
-    url: http://alertmanager:9093
-    editable: false
-    jsonData:
-      implementation: prometheus
+      sslmode: disable
+      maxOpenConns: 10
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+      postgresVersion: 1600
+      timescaledb: false

@@ -2,7 +2,7 @@
   "annotations": {
     "list": [
       {
-        "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+        "datasource": { "type": "postgres", "uid": "postgres" },
         "enable": true,
         "iconColor": "red",
         "name": "Disruption Events",
@@ -11,7 +11,7 @@
       }
     ]
   },
-  "description": "Signal metrics from SQLite database - historical 5G/4G RSRP, RSRQ, SINR data",
+  "description": "Signal metrics from PostgreSQL database - historical 5G/4G RSRP, RSRQ, SINR data",
   "editable": true,
   "graphTooltip": 1,
   "id": null,
@@ -26,7 +26,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -74,7 +74,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -122,7 +122,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -170,7 +170,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -216,7 +216,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -264,7 +264,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -312,7 +312,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -360,7 +360,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -406,7 +406,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -460,7 +460,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -521,7 +521,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -563,7 +563,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT strftime('%Y-%m-%d %H:00', timestamp_unix, 'unixepoch') as time, AVG(nr_sinr) as 'Avg SINR', MIN(nr_sinr) as 'Min SINR', MAX(nr_sinr) as 'Max SINR' FROM signal_history WHERE nr_sinr IS NOT NULL GROUP BY strftime('%Y-%m-%d %H', timestamp_unix, 'unixepoch') ORDER BY time",
+          "rawSql": "SELECT to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24:00') as time, AVG(nr_sinr) as \"Avg SINR\", MIN(nr_sinr) as \"Min SINR\", MAX(nr_sinr) as \"Max SINR\" FROM signal_history WHERE nr_sinr IS NOT NULL GROUP BY to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24') ORDER BY time",
           "refId": "A",
           "format": "table"
         }
@@ -572,7 +572,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -614,7 +614,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT strftime('%Y-%m-%d %H:00', timestamp_unix, 'unixepoch') as time, AVG(nr_rsrp) as 'Avg RSRP', MIN(nr_rsrp) as 'Min RSRP', MAX(nr_rsrp) as 'Max RSRP' FROM signal_history WHERE nr_rsrp IS NOT NULL GROUP BY strftime('%Y-%m-%d %H', timestamp_unix, 'unixepoch') ORDER BY time",
+          "rawSql": "SELECT to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24:00') as time, AVG(nr_rsrp) as \"Avg RSRP\", MIN(nr_rsrp) as \"Min RSRP\", MAX(nr_rsrp) as \"Max RSRP\" FROM signal_history WHERE nr_rsrp IS NOT NULL GROUP BY to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24') ORDER BY time",
           "refId": "A",
           "format": "table"
         }
@@ -630,7 +630,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -668,7 +668,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -713,7 +713,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -756,7 +756,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -800,7 +800,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -831,7 +831,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT nr_bands as 'Band', COUNT(*) as 'Count' FROM signal_history WHERE nr_bands IS NOT NULL GROUP BY nr_bands ORDER BY COUNT(*) DESC",
+          "rawSql": "SELECT nr_bands as \"Band\", COUNT(*) as \"Count\" FROM signal_history WHERE nr_bands IS NOT NULL GROUP BY nr_bands ORDER BY COUNT(*) DESC",
           "refId": "A",
           "format": "table"
         }
@@ -840,7 +840,7 @@
       "type": "barchart"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -871,7 +871,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT lte_bands as 'Band', COUNT(*) as 'Count' FROM signal_history WHERE lte_bands IS NOT NULL GROUP BY lte_bands ORDER BY COUNT(*) DESC",
+          "rawSql": "SELECT lte_bands as \"Band\", COUNT(*) as \"Count\" FROM signal_history WHERE lte_bands IS NOT NULL GROUP BY lte_bands ORDER BY COUNT(*) DESC",
           "refId": "A",
           "format": "table"
         }
@@ -887,7 +887,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -920,7 +920,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -954,7 +954,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -993,7 +993,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "frser-sqlite-datasource", "uid": "sqlite" },
+      "datasource": { "type": "postgres", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -1035,14 +1035,14 @@
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["netpulse", "signal", "sqlite", "5g", "4g", "historical"],
+  "tags": ["netpulse", "signal", "5g", "4g", "historical"],
   "templating": { "list": [] },
   "time": { "from": "now-24h", "to": "now" },
   "timepicker": {
     "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"],
     "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
   },
-  "title": "NetPulse Signal (SQLite)",
-  "uid": "netpulse-signal-sqlite",
+  "title": "NetPulse Signal",
+  "uid": "netpulse-signal",
   "version": 1
 }
