@@ -82,10 +82,13 @@ bun run dev:app     # Apps only (skip infra)
 | **Backend API** | 3001 | http://localhost:3001 |
 | **Frontend** | 5173 | http://localhost:5173 (Vite dev) |
 | **Grafana** | 3002 | http://localhost:3002 (admin/netpulse123) |
+| **PostgreSQL** | 5432 | postgres://netpulse:netpulse_secret@localhost:5432/netpulse |
 
-> **Note:** The stack has been simplified. Grafana now queries SQLite directly. Prometheus, Alertmanager, Mimir, Loki, Tempo, and Gateway Exporter have been removed.
+> **Note:** The stack uses PostgreSQL for data storage - Grafana's native datasource (no plugins needed). Prometheus, Alertmanager, Mimir, Loki, Tempo, and Gateway Exporter have been removed for simplicity.
 
-**RCA Guide:** See `docs/rca-guide.md` for diagnosing network issues using SQLite queries.
+**Database Migration:** Run `bun run db:migrate` in `apps/api/` after starting PostgreSQL to create tables.
+
+**RCA Guide:** See `docs/rca-guide.md` for diagnosing network issues using SQL queries.
 
 ## Full Stack Scripts
 
@@ -140,6 +143,7 @@ If processes get orphaned (e.g., after a crash), use the kill scripts to clean u
 |----------|--------------|
 | Package manager | Bun |
 | Backend | Effect/TypeScript (apps/api) |
+| Database | PostgreSQL (native Grafana datasource) |
 | Frontend UI | Base UI |
 | Linting | oxfmt (TS) |
 | Infra commands | bun run infra:* |

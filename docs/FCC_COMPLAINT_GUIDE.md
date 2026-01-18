@@ -34,7 +34,7 @@ Before filing an FCC complaint, ensure you have collected sufficient evidence to
 
 **Check your readiness:**
 ```
-GET http://localhost:8080/api/fcc-readiness
+GET http://localhost:3001/api/fcc-readiness
 ```
 
 ### Contact T-Mobile First
@@ -118,13 +118,13 @@ The NetPulse Dashboard generates comprehensive evidence reports. Use these API e
 
 ```
 # Full JSON report
-GET http://localhost:8080/api/fcc-report?format=json&days=30
+GET http://localhost:3001/api/fcc-report?format=json&days=30
 
 # CSV export (for raw data attachment)
-GET http://localhost:8080/api/fcc-report?format=csv&days=30
+GET http://localhost:3001/api/fcc-report?format=csv&days=30
 
 # PDF report (formatted narrative)
-GET http://localhost:8080/api/fcc-report?format=pdf&days=30
+GET http://localhost:3001/api/fcc-report?format=pdf&days=30
 ```
 
 ### Evidence Components

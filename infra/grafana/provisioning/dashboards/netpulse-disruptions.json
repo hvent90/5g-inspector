@@ -15,8 +15,8 @@
       },
       {
         "datasource": {
-          "type": "frser-sqlite-datasource",
-          "uid": "sqlite"
+          "type": "postgres",
+          "uid": "postgres"
         },
         "enable": true,
         "iconColor": "red",
@@ -26,8 +26,8 @@
       },
       {
         "datasource": {
-          "type": "frser-sqlite-datasource",
-          "uid": "sqlite"
+          "type": "postgres",
+          "uid": "postgres"
         },
         "enable": true,
         "iconColor": "orange",
@@ -37,8 +37,8 @@
       },
       {
         "datasource": {
-          "type": "frser-sqlite-datasource",
-          "uid": "sqlite"
+          "type": "postgres",
+          "uid": "postgres"
         },
         "enable": true,
         "iconColor": "yellow",
@@ -48,8 +48,8 @@
       },
       {
         "datasource": {
-          "type": "frser-sqlite-datasource",
-          "uid": "sqlite"
+          "type": "postgres",
+          "uid": "postgres"
         },
         "enable": true,
         "iconColor": "purple",
@@ -94,8 +94,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Total disruption events in selected time range",
       "fieldConfig": {
@@ -147,8 +147,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as total FROM disruption_events",
@@ -160,8 +160,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Number of gateway unreachable events",
       "fieldConfig": {
@@ -213,8 +213,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as outages FROM disruption_events WHERE event_type = 'gateway_unreachable'",
@@ -226,8 +226,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Number of tower handoff events (5G and 4G)",
       "fieldConfig": {
@@ -279,8 +279,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as handoffs FROM disruption_events WHERE event_type LIKE 'tower_change%'",
@@ -292,8 +292,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Number of significant signal degradation events",
       "fieldConfig": {
@@ -345,8 +345,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as drops FROM disruption_events WHERE event_type LIKE 'signal_drop%'",
@@ -358,8 +358,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Ping success rate from continuous monitoring",
       "fieldConfig": {
@@ -419,11 +419,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as success_rate FROM continuous_ping",
+          "rawSql": "SELECT ROUND(SUM(CASE WHEN success = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as success_rate FROM continuous_ping",
           "refId": "A"
         }
       ],
@@ -432,8 +432,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Failed pings in selected time range",
       "fieldConfig": {
@@ -485,11 +485,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as failures FROM continuous_ping WHERE success = 0",
+          "rawSql": "SELECT COUNT(*) as failures FROM continuous_ping WHERE success = false",
           "refId": "A"
         }
       ],
@@ -511,8 +511,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "All disruption events over time with type breakdown",
       "fieldConfig": {
@@ -635,11 +635,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, event_type, COUNT(*) as count FROM disruption_events GROUP BY strftime('%Y-%m-%d %H', datetime(timestamp_unix, 'unixepoch')), event_type ORDER BY time",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, event_type, COUNT(*) as count FROM disruption_events GROUP BY to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24'), event_type, timestamp_unix ORDER BY time",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
@@ -650,8 +650,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Ping success/failure timeline",
       "fieldConfig": {
@@ -671,12 +671,12 @@
           "mappings": [
             {
               "options": {
-                "0": {
+                "false": {
                   "color": "red",
                   "index": 1,
                   "text": "Failed"
                 },
-                "1": {
+                "true": {
                   "color": "green",
                   "index": 0,
                   "text": "Success"
@@ -726,8 +726,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, success as \"Connectivity\" FROM continuous_ping ORDER BY timestamp_unix",
@@ -754,8 +754,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "5G SINR (Signal to Interference Noise Ratio) over time",
       "fieldConfig": {
@@ -871,8 +871,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_sinr as \"5G SINR\", lte_sinr as \"4G SINR\" FROM signal_history ORDER BY time",
@@ -886,8 +886,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Reference Signal Received Power over time",
       "fieldConfig": {
@@ -1003,8 +1003,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rsrp as \"5G RSRP\", lte_rsrp as \"4G RSRP\" FROM signal_history ORDER BY time",
@@ -1031,8 +1031,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Physical Cell ID changes over time (tower handoffs)",
       "fieldConfig": {
@@ -1139,8 +1139,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_pci as \"5G PCI\", lte_pci as \"4G PCI\" FROM signal_history ORDER BY time",
@@ -1154,8 +1154,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Tower ID changes (gNodeB for 5G, eNodeB for 4G)",
       "fieldConfig": {
@@ -1262,8 +1262,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_gnb_id as \"5G gNodeB\", lte_enb_id as \"4G eNodeB\" FROM signal_history ORDER BY time",
@@ -1277,8 +1277,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Active frequency bands over time (5G NR and 4G LTE)",
       "fieldConfig": {
@@ -1385,8 +1385,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(nr_bands, 'n', ''), ',', '') AS INTEGER) as \"5G Band\" FROM signal_history WHERE nr_bands IS NOT NULL AND nr_bands != '' ORDER BY time",
@@ -1396,8 +1396,8 @@
         },
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(lte_bands, 'B', ''), ',', '') AS INTEGER) as \"4G Band\" FROM signal_history WHERE lte_bands IS NOT NULL AND lte_bands != '' ORDER BY time",
@@ -1424,8 +1424,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Recent disruption events with details",
       "fieldConfig": {
@@ -1573,11 +1573,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch', 'localtime') as time, event_type, description, duration_seconds FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 100",
+          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, event_type, description, duration_seconds FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 100",
           "refId": "A",
           "format": "table"
         }
@@ -1587,8 +1587,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Failed ping events with error details",
       "fieldConfig": {
@@ -1709,11 +1709,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch', 'localtime') as time, target_host, error_type, latency_ms FROM continuous_ping WHERE success = 0 ORDER BY timestamp_unix DESC LIMIT 100",
+          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, target_host, error_type, latency_ms FROM continuous_ping WHERE success = false ORDER BY timestamp_unix DESC LIMIT 100",
           "refId": "A",
           "format": "table"
         }
@@ -1723,8 +1723,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Gateway poll failures with error details",
       "fieldConfig": {
@@ -1841,11 +1841,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch', 'localtime') as time, error_type, circuit_state, error_message FROM gateway_poll_events WHERE success = 0 ORDER BY timestamp_unix DESC LIMIT 100",
+          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, error_type, circuit_state, error_message FROM gateway_poll_events WHERE success = false ORDER BY timestamp_unix DESC LIMIT 100",
           "refId": "A",
           "format": "table"
         }
@@ -1868,8 +1868,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Distribution of disruption event types",
       "fieldConfig": {
@@ -1963,8 +1963,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT event_type, COUNT(*) as count FROM disruption_events GROUP BY event_type ORDER BY count DESC",
@@ -1977,8 +1977,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Disruption frequency by hour of day",
       "fieldConfig": {
@@ -2054,11 +2054,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT CAST(strftime('%H', datetime(timestamp_unix, 'unixepoch', 'localtime')) AS INTEGER) as hour, COUNT(*) as disruptions FROM disruption_events GROUP BY hour ORDER BY hour",
+          "rawSql": "SELECT EXTRACT(HOUR FROM to_timestamp(timestamp_unix))::INTEGER as hour, COUNT(*) as disruptions FROM disruption_events GROUP BY hour ORDER BY hour",
           "refId": "A",
           "format": "table"
         }
@@ -2068,8 +2068,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Error type distribution in gateway poll failures",
       "fieldConfig": {
@@ -2163,11 +2163,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(error_type, 'unknown') as error_type, COUNT(*) as count FROM gateway_poll_events WHERE success = 0 GROUP BY error_type ORDER BY count DESC",
+          "rawSql": "SELECT COALESCE(error_type, 'unknown') as error_type, COUNT(*) as count FROM gateway_poll_events WHERE success = false GROUP BY error_type ORDER BY count DESC",
           "refId": "A",
           "format": "table"
         }
@@ -2177,8 +2177,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Average gap between consecutive failures (helps identify periodic issues)",
       "fieldConfig": {
@@ -2231,11 +2231,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "WITH failures AS (SELECT timestamp_unix, LAG(timestamp_unix) OVER (ORDER BY timestamp_unix) as prev_time FROM continuous_ping WHERE success = 0) SELECT ROUND(AVG(timestamp_unix - prev_time), 1) as avg_gap FROM failures WHERE prev_time IS NOT NULL AND (timestamp_unix - prev_time) < 600",
+          "rawSql": "WITH failures AS (SELECT timestamp_unix, LAG(timestamp_unix) OVER (ORDER BY timestamp_unix) as prev_time FROM continuous_ping WHERE success = false) SELECT ROUND(AVG(timestamp_unix - prev_time)::numeric, 1) as avg_gap FROM failures WHERE prev_time IS NOT NULL AND (timestamp_unix - prev_time) < 600",
           "refId": "A"
         }
       ],
@@ -2244,8 +2244,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Average ping latency for successful pings",
       "fieldConfig": {
@@ -2298,11 +2298,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(AVG(latency_ms), 1) as avg_latency FROM continuous_ping WHERE success = 1",
+          "rawSql": "SELECT ROUND(AVG(latency_ms)::numeric, 1) as avg_latency FROM continuous_ping WHERE success = true",
           "refId": "A"
         }
       ],
@@ -2311,8 +2311,8 @@
     },
     {
       "datasource": {
-        "type": "frser-sqlite-datasource",
-        "uid": "sqlite"
+        "type": "postgres",
+        "uid": "postgres"
       },
       "description": "Total estimated downtime based on failure durations",
       "fieldConfig": {
@@ -2365,8 +2365,8 @@
       "targets": [
         {
           "datasource": {
-            "type": "frser-sqlite-datasource",
-            "uid": "sqlite"
+            "type": "postgres",
+            "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COALESCE(SUM(duration_seconds), 0) as total_downtime FROM disruption_events WHERE event_type = 'gateway_unreachable'",
@@ -2379,7 +2379,7 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["netpulse", "disruptions", "sqlite", "outages"],
+  "tags": ["netpulse", "disruptions", "outages"],
   "templating": {
     "list": []
   },
@@ -2389,8 +2389,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "NetPulse Disruptions (SQLite)",
-  "uid": "netpulse-disruptions-sqlite",
+  "title": "NetPulse Disruptions",
+  "uid": "netpulse-disruptions",
   "version": 1,
   "weekStart": ""
 }

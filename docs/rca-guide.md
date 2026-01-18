@@ -8,19 +8,19 @@ This guide helps Claude Code diagnose network issues using NetPulse's observabil
 
 | Source | Location | Query Method | Best For |
 |--------|----------|--------------|----------|
-| `signal_history` | SQLite | SQL | Signal metrics over time |
-| `disruption_events` | SQLite | SQL | Circuit breaker events, tower changes |
-| `gateway_poll_events` | SQLite | SQL | Individual poll failures (no retention limit) |
-| `continuous_ping` | SQLite | SQL | 30-second connectivity checks |
-| `network_quality` | SQLite | SQL | Packet loss, jitter (5-15 min intervals) |
-| `speedtest_results` | SQLite | SQL | Speed test history with signal snapshots |
-| Loki | `localhost:3100` | LogQL | Real-time events, Grafana dashboards |
-| Prometheus | `localhost:9090` | PromQL | Metrics, alerting |
+| `signal_history` | PostgreSQL | SQL | Signal metrics over time |
+| `disruption_events` | PostgreSQL | SQL | Circuit breaker events, tower changes |
+| `speedtest_results` | PostgreSQL | SQL | Speed test history with signal snapshots |
+| `network_quality_results` | PostgreSQL | SQL | Packet loss, jitter, latency |
 
-### Database Path
+### Database Connection
 
 ```bash
-data/signal_history.db
+# Via psql
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse
+
+# Via podman
+podman exec -it netpulse-postgres psql -U netpulse -d netpulse
 ```
 
 ---
@@ -39,8 +39,8 @@ Ask the user to describe the issue:
 ```sql
 -- Find the time range of available data
 SELECT
-  datetime(MIN(timestamp_unix), 'unixepoch', 'localtime') as earliest,
-  datetime(MAX(timestamp_unix), 'unixepoch', 'localtime') as latest,
+  to_timestamp(MIN(timestamp_unix)) AT TIME ZONE 'UTC' as earliest,
+  to_timestamp(MAX(timestamp_unix)) AT TIME ZONE 'UTC' as latest,
   COUNT(*) as total_records
 FROM signal_history;
 ```
@@ -65,16 +65,17 @@ Test your hypothesis against the data before presenting conclusions.
 
 **Symptom**: "20-second drops every 2 minutes"
 
-**Step 1: Check continuous ping for failures**
+**Step 1: Check network quality for failures**
 ```sql
 SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time,
   target_host,
-  success,
-  latency_ms,
-  error_type
-FROM continuous_ping
-WHERE success = 0
+  status,
+  ping_ms,
+  packet_loss_percent,
+  error_message
+FROM network_quality_results
+WHERE status != 'success'
 ORDER BY timestamp_unix DESC
 LIMIT 100;
 ```
@@ -85,13 +86,13 @@ WITH failures AS (
   SELECT
     timestamp_unix,
     LAG(timestamp_unix) OVER (ORDER BY timestamp_unix) as prev_time
-  FROM continuous_ping
-  WHERE success = 0
+  FROM network_quality_results
+  WHERE status != 'success'
 )
 SELECT
-  ROUND(AVG(timestamp_unix - prev_time), 1) as avg_gap_seconds,
-  ROUND(MIN(timestamp_unix - prev_time), 1) as min_gap_seconds,
-  ROUND(MAX(timestamp_unix - prev_time), 1) as max_gap_seconds,
+  ROUND(AVG(timestamp_unix - prev_time)::numeric, 1) as avg_gap_seconds,
+  ROUND(MIN(timestamp_unix - prev_time)::numeric, 1) as min_gap_seconds,
+  ROUND(MAX(timestamp_unix - prev_time)::numeric, 1) as max_gap_seconds,
   COUNT(*) as sample_count
 FROM failures
 WHERE prev_time IS NOT NULL
@@ -102,17 +103,17 @@ WHERE prev_time IS NOT NULL
 ```sql
 -- Find signal metrics around failure times
 WITH failure_times AS (
-  SELECT DISTINCT ROUND(timestamp_unix / 60) * 60 as minute_bucket
-  FROM continuous_ping
-  WHERE success = 0
+  SELECT DISTINCT FLOOR(timestamp_unix / 60) * 60 as minute_bucket
+  FROM network_quality_results
+  WHERE status != 'success'
 )
 SELECT
-  datetime(s.timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(s.timestamp_unix) AT TIME ZONE 'UTC' as time,
   s.nr_sinr, s.nr_rsrp,
   s.lte_sinr, s.lte_rsrp,
   s.nr_gnb_id, s.lte_enb_id
 FROM signal_history s
-JOIN failure_times f ON ROUND(s.timestamp_unix / 60) * 60 = f.minute_bucket
+JOIN failure_times f ON FLOOR(s.timestamp_unix / 60) * 60 = f.minute_bucket
 ORDER BY s.timestamp_unix DESC
 LIMIT 50;
 ```
@@ -120,7 +121,7 @@ LIMIT 50;
 **Step 4: Check for tower handoffs**
 ```sql
 SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time,
   event_type,
   description,
   before_state,
@@ -137,44 +138,31 @@ LIMIT 20;
 
 **Symptom**: "Can't connect to the internet" or dashboard shows errors
 
-**Step 1: Check recent gateway poll failures**
+**Step 1: Check recent disruption events**
 ```sql
 SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
-  error_type,
-  error_message,
-  circuit_state,
-  signal_snapshot
-FROM gateway_poll_events
-WHERE success = 0
+  to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time,
+  event_type,
+  severity,
+  description,
+  before_state,
+  after_state
+FROM disruption_events
+WHERE event_type = 'gateway_unreachable'
 ORDER BY timestamp_unix DESC
 LIMIT 50;
 ```
 
-**Step 2: Analyze error type distribution**
+**Step 2: Analyze event type distribution**
 ```sql
 SELECT
-  error_type,
+  event_type,
   COUNT(*) as count,
   ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 1) as percent
-FROM gateway_poll_events
-WHERE success = 0
-  AND timestamp_unix > unixepoch() - 86400  -- Last 24 hours
-GROUP BY error_type
-ORDER BY count DESC;
-```
-
-**Step 3: Check circuit breaker events**
-```sql
-SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
-  event_type,
-  duration_seconds,
-  description
 FROM disruption_events
-WHERE event_type = 'gateway_unreachable'
-ORDER BY timestamp_unix DESC
-LIMIT 20;
+WHERE timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 86400  -- Last 24 hours
+GROUP BY event_type
+ORDER BY count DESC;
 ```
 
 **Interpretation:**
@@ -191,7 +179,7 @@ LIMIT 20;
 **Step 1: Review recent speed tests**
 ```sql
 SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time,
   download_mbps,
   upload_mbps,
   ping_ms,
@@ -208,11 +196,11 @@ LIMIT 20;
 SELECT
   network_context,
   COUNT(*) as tests,
-  ROUND(AVG(download_mbps), 1) as avg_download,
-  ROUND(AVG(upload_mbps), 1) as avg_upload,
-  ROUND(AVG(ping_ms), 1) as avg_ping
+  ROUND(AVG(download_mbps)::numeric, 1) as avg_download,
+  ROUND(AVG(upload_mbps)::numeric, 1) as avg_upload,
+  ROUND(AVG(ping_ms)::numeric, 1) as avg_ping
 FROM speedtest_results
-WHERE timestamp_unix > unixepoch() - 604800  -- Last 7 days
+WHERE timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 604800  -- Last 7 days
 GROUP BY network_context
 ORDER BY avg_download DESC;
 ```
@@ -221,16 +209,19 @@ ORDER BY avg_download DESC;
 ```sql
 SELECT
   CASE
-    WHEN json_extract(signal_snapshot, '$.nr.sinr') > 15 THEN 'excellent'
-    WHEN json_extract(signal_snapshot, '$.nr.sinr') > 5 THEN 'good'
-    WHEN json_extract(signal_snapshot, '$.nr.sinr') > 0 THEN 'fair'
+    WHEN (signal_snapshot::json->>'nr')::json->>'sinr' IS NOT NULL AND
+         ((signal_snapshot::json->>'nr')::json->>'sinr')::float > 15 THEN 'excellent'
+    WHEN (signal_snapshot::json->>'nr')::json->>'sinr' IS NOT NULL AND
+         ((signal_snapshot::json->>'nr')::json->>'sinr')::float > 5 THEN 'good'
+    WHEN (signal_snapshot::json->>'nr')::json->>'sinr' IS NOT NULL AND
+         ((signal_snapshot::json->>'nr')::json->>'sinr')::float > 0 THEN 'fair'
     ELSE 'poor'
   END as signal_quality,
   COUNT(*) as tests,
-  ROUND(AVG(download_mbps), 1) as avg_download
+  ROUND(AVG(download_mbps)::numeric, 1) as avg_download
 FROM speedtest_results
 WHERE signal_snapshot IS NOT NULL
-  AND timestamp_unix > unixepoch() - 604800
+  AND timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 604800
 GROUP BY signal_quality
 ORDER BY avg_download DESC;
 ```
@@ -244,11 +235,11 @@ ORDER BY avg_download DESC;
 **Step 1: Find SINR drop events**
 ```sql
 SELECT
-  datetime(timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time,
   event_type,
   description,
-  json_extract(before_state, '$.nr_sinr') as before_sinr,
-  json_extract(after_state, '$.nr_sinr') as after_sinr
+  before_state,
+  after_state
 FROM disruption_events
 WHERE event_type LIKE 'signal_drop%'
 ORDER BY timestamp_unix DESC
@@ -258,13 +249,13 @@ LIMIT 30;
 **Step 2: Analyze signal patterns over time**
 ```sql
 SELECT
-  strftime('%H', datetime(timestamp_unix, 'unixepoch', 'localtime')) as hour,
-  ROUND(AVG(nr_sinr), 1) as avg_5g_sinr,
-  ROUND(MIN(nr_sinr), 1) as min_5g_sinr,
-  ROUND(AVG(lte_sinr), 1) as avg_4g_sinr,
+  EXTRACT(HOUR FROM to_timestamp(timestamp_unix))::integer as hour,
+  ROUND(AVG(nr_sinr)::numeric, 1) as avg_5g_sinr,
+  ROUND(MIN(nr_sinr)::numeric, 1) as min_5g_sinr,
+  ROUND(AVG(lte_sinr)::numeric, 1) as avg_4g_sinr,
   COUNT(*) as samples
 FROM signal_history
-WHERE timestamp_unix > unixepoch() - 86400
+WHERE timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 86400
 GROUP BY hour
 ORDER BY hour;
 ```
@@ -277,7 +268,7 @@ WITH signal_drops AS (
   WHERE event_type LIKE 'signal_drop%'
 )
 SELECT
-  datetime(d.timestamp_unix, 'unixepoch', 'localtime') as time,
+  to_timestamp(d.timestamp_unix) AT TIME ZONE 'UTC' as time,
   d.event_type,
   d.description
 FROM disruption_events d
@@ -287,40 +278,6 @@ WHERE d.event_type IN ('tower_change_5g', 'tower_change_4g', 'connection_mode_ch
     WHERE ABS(d.timestamp_unix - s.timestamp_unix) < 60
   )
 ORDER BY d.timestamp_unix DESC;
-```
-
----
-
-## Loki Queries
-
-### Query Gateway Errors
-```bash
-curl -s 'http://localhost:3100/loki/api/v1/query_range' \
-  --data-urlencode 'query={job="netpulse", event_type="gateway_error"}' \
-  --data-urlencode 'start='$(date -d '1 hour ago' +%s)000000000 \
-  --data-urlencode 'end='$(date +%s)000000000 \
-  | jq '.data.result[].values | length'
-```
-
-### Query Outage Events
-```bash
-curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="netpulse", event_type="gateway_outage"} | json' \
-  | jq '.data.result[].values[] | .[1] | fromjson'
-```
-
-### Query Continuous Ping Failures
-```bash
-curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="netpulse", event_type="continuous_ping", success="false"}' \
-  | jq '.data.result | length'
-```
-
-### Query Signal Quality Drops
-```bash
-curl -s 'http://localhost:3100/loki/api/v1/query' \
-  --data-urlencode 'query={job="netpulse", event_type="signal_quality"} | json' \
-  | jq '.data.result[].values[] | .[1] | fromjson | {network, drop_db, before: .before_value, after: .after_value}'
 ```
 
 ---
@@ -356,12 +313,12 @@ curl -s 'http://localhost:3100/loki/api/v1/query' \
 
 ### Pattern: Periodic Timeouts + Stable Signal
 **Cause**: Gateway firmware issue or ISP-side problem
-**Evidence**: Regular timeout errors in `gateway_poll_events` with good signal in `signal_snapshot`
+**Evidence**: Regular timeout errors with good signal in `signal_snapshot`
 **Solution**: Gateway reboot, firmware update, or ISP ticket
 
 ### Pattern: High Packet Loss + Low SINR
 **Cause**: Poor signal quality causing retransmissions
-**Evidence**: Correlated `network_quality.packet_loss_percent` spikes with low `signal_history.nr_sinr`
+**Evidence**: Correlated `network_quality_results.packet_loss_percent` spikes with low `signal_history.nr_sinr`
 **Solution**: Antenna positioning, band locking to stronger signal
 
 ### Pattern: Slow Speeds Only During "busy" Context
@@ -375,19 +332,24 @@ curl -s 'http://localhost:3100/loki/api/v1/query' \
 
 ```bash
 # Count failures in last hour
-sqlite3 data/signal_history.db "SELECT COUNT(*) FROM gateway_poll_events WHERE success=0 AND timestamp_unix > unixepoch()-3600"
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse -t -c \
+  "SELECT COUNT(*) FROM network_quality_results WHERE status != 'success' AND timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 3600"
 
 # Average ping latency in last hour
-sqlite3 data/signal_history.db "SELECT ROUND(AVG(latency_ms),1) FROM continuous_ping WHERE success=1 AND timestamp_unix > unixepoch()-3600"
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse -t -c \
+  "SELECT ROUND(AVG(ping_ms)::numeric, 1) FROM network_quality_results WHERE status = 'success' AND timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 3600"
 
 # Current signal quality
-sqlite3 data/signal_history.db "SELECT nr_sinr, nr_rsrp, lte_sinr, lte_rsrp FROM signal_history ORDER BY timestamp_unix DESC LIMIT 1"
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse -t -c \
+  "SELECT nr_sinr, nr_rsrp, lte_sinr, lte_rsrp FROM signal_history ORDER BY timestamp_unix DESC LIMIT 1"
 
 # Recent disruption events
-sqlite3 data/signal_history.db "SELECT datetime(timestamp_unix,'unixepoch','localtime'), event_type, description FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 10"
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse -c \
+  "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, event_type, description FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 10"
 
 # Failure rate in last 24h
-sqlite3 data/signal_history.db "SELECT ROUND(SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) || '%' FROM continuous_ping WHERE timestamp_unix > unixepoch()-86400"
+psql postgres://netpulse:netpulse_secret@localhost:5432/netpulse -t -c \
+  "SELECT ROUND(SUM(CASE WHEN status != 'success' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 2) || '%' FROM network_quality_results WHERE timestamp_unix > EXTRACT(EPOCH FROM NOW()) - 86400"
 ```
 
 ---
@@ -416,7 +378,7 @@ When presenting RCA findings to the user:
 **Time Range**: Last 6 hours (2024-01-15 14:00 - 20:00)
 
 **Findings**:
-- 47 ping failures detected in continuous_ping
+- 47 ping failures detected in network_quality_results
 - Average gap between failures: 2.4 minutes
 - 12 gateway_unreachable events in disruption_events
 - Signal during failures: SINR 8-12 dB (fair), RSRP -95 dBm (fair)

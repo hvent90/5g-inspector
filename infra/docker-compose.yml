@@ -1,28 +1,52 @@
-# NetPulse - Combined Grafana + API Stack
-# Runs both services in a single container to avoid SQLite bind-mount issues
+# NetPulse - PostgreSQL + Grafana Stack
+# PostgreSQL provides native Grafana datasource support (no plugins needed)
 
 version: '3.8'
 
 services:
   # ============================================
-  # Grafana + API Combined Container
+  # PostgreSQL Database
   # ============================================
-  netpulse:
-    image: localhost/netpulse-grafana-api:latest
-    container_name: netpulse-grafana
-    ports:
-      - "3002:3000"  # Grafana
-      - "3001:3001"  # API
+  postgres:
+    image: postgres:16-alpine
+    container_name: netpulse-postgres
     environment:
-      - DB_PATH=/var/lib/grafana/signal_history.db
-      - GATEWAY_HOST=host.containers.internal
+      POSTGRES_USER: netpulse
+      POSTGRES_PASSWORD: netpulse_secret
+      POSTGRES_DB: netpulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - netpulse-monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netpulse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # Grafana Dashboard
+  # ============================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: netpulse-grafana
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=netpulse123
+      - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
-    extra_hosts:
-      - "host.containers.internal:host-gateway"
     networks:
       - netpulse-monitoring
     restart: unless-stopped
@@ -31,6 +55,8 @@ services:
 # Volumes for persistent data
 # ============================================
 volumes:
+  postgres-data:
+    driver: local
   grafana-data:
     driver: local
 

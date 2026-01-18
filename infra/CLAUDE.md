@@ -4,25 +4,32 @@
 
 | Service | Port | Purpose |
 |---------|------|---------|
+| PostgreSQL | 5432 | Data storage (netpulse:netpulse_secret) |
 | Grafana | 3002 | Dashboards & Alerting (admin/netpulse123) |
 
-> **Note:** The Gateway Exporter (port 9100) has been removed. The API backend (apps/api) polls the gateway directly at 200ms intervals and stores data in SQLite, which Grafana queries directly.
+> **Note:** The API backend (apps/api) polls the gateway directly at 200ms intervals and stores data in PostgreSQL, which Grafana queries using its native PostgreSQL datasource (no plugins needed).
 
-## Grafana Alert Rules (SQLite-based)
+## Database Setup
 
-Alerting is managed via Grafana's unified alerting system using SQLite queries for persistent historical data.
-This provides better data retention and more accurate alerting than Prometheus-only alerts.
-
-Alert rules are provisioned from:
-- `grafana/provisioning/alerting/alert_rules.yml` - SQLite-based alert rule definitions
-- `grafana/provisioning/alerting/alerting.yml` - Contact points and notification policies
-
-SQLite tables used for alerting:
+PostgreSQL tables:
 - `signal_history` - Raw signal samples (200ms interval)
 - `speedtest_results` - Speed test results with signal snapshots
-- `continuous_ping` - High-frequency ping/latency data
-- `gateway_poll_events` - Gateway connectivity events
 - `disruption_events` - Detected signal disruptions
+- `network_quality_results` - Network quality ping results
+
+Run migrations after starting the stack:
+```bash
+cd apps/api && bun run db:migrate
+```
+
+## Grafana Alert Rules (PostgreSQL-based)
+
+Alerting is managed via Grafana's unified alerting system using PostgreSQL queries for persistent historical data.
+This provides better data retention and more accurate alerting than in-memory solutions.
+
+Alert rules are provisioned from:
+- `grafana/provisioning/alerting/alert_rules.yml` - PostgreSQL-based alert rule definitions
+- `grafana/provisioning/alerting/alerting.yml` - Contact points and notification policies
 
 ### 1. Signal Quality Alerts (30s interval)
 
@@ -46,17 +53,15 @@ SQLite tables used for alerting:
 
 | Alert | Threshold | Severity | Data Source |
 |-------|-----------|----------|-------------|
-| NetPulse High Latency Warning | avg > 100ms for 2m | warning | continuous_ping |
-| NetPulse High Latency Critical | avg > 200ms for 1m | critical | continuous_ping |
-| NetPulse High Packet Loss | > 5% for 2m | warning | continuous_ping |
-| NetPulse Severe Packet Loss | > 20% for 1m | critical | continuous_ping |
+| NetPulse High Latency Warning | avg > 100ms for 2m | warning | network_quality_results |
+| NetPulse High Latency Critical | avg > 200ms for 1m | critical | network_quality_results |
+| NetPulse High Packet Loss | > 5% for 2m | warning | network_quality_results |
+| NetPulse Severe Packet Loss | > 20% for 1m | critical | network_quality_results |
 
 ### 4. Connection Alerts (30s interval)
 
 | Alert | Threshold | Severity | Data Source |
 |-------|-----------|----------|-------------|
-| NetPulse Gateway Connection Failures | >10 failures in 1m | critical | gateway_poll_events |
-| NetPulse Gateway Connection Unstable | <90% success rate over 5m | warning | gateway_poll_events |
 | NetPulse No Data Collection | >60s since last data | critical | signal_history |
 | NetPulse Extended Data Outage | >300s since last data | critical | signal_history |
 
@@ -108,16 +113,30 @@ podman machine list
 podman machine list
 
 # Check for port conflicts
-netstat -an | findstr "3002"
+netstat -an | findstr "3002 5432"
 
 # View container logs
 podman logs netpulse-grafana
+podman logs netpulse-postgres
 ```
 
 **Grafana dashboards empty:**
-- Verify SQLite datasource: http://localhost:3002/connections/datasources
+- Verify PostgreSQL datasource: http://localhost:3002/connections/datasources
 - Check time range selector (default may be too narrow)
-- Ensure API backend (apps/api) is running and collecting data to SQLite
+- Ensure API backend (apps/api) is running and collecting data
+- Run migrations: `cd apps/api && bun run db:migrate`
+
+**Database connection issues:**
+```bash
+# Check PostgreSQL is running
+podman exec netpulse-postgres pg_isready -U netpulse
+
+# Connect to database
+podman exec -it netpulse-postgres psql -U netpulse -d netpulse
+
+# Check tables exist
+\dt
+```
 
 ---
 
