@@ -44,9 +44,9 @@ interface ToolInfo {
 
 // Tool metadata for display
 const TOOL_METADATA: Record<string, { label: string; description: string; hasUpload: boolean }> = {
+  'fast-cli': { label: 'Fast.com', description: 'Netflix CDN (realistic)', hasUpload: true },
   'ookla-speedtest': { label: 'Ookla', description: 'Official Speedtest CLI', hasUpload: true },
   'speedtest-cli': { label: 'speedtest-cli', description: 'Python speedtest', hasUpload: true },
-  'fast-cli': { label: 'Fast.com', description: 'Netflix CDN (download only)', hasUpload: false },
 };
 
 interface SchedulerStats {

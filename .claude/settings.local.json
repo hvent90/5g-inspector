@@ -79,7 +79,14 @@
       "Bash(DEBUG=\"*\" bun run:*)",
       "Bash(cmd /c \"taskkill /F /PID 33404\")",
       "Bash(ss:*)",
-      "Bash(wmic process:*)"
+      "Bash(wmic process:*)",
+      "Bash(podman cp:*)",
+      "Bash(winget search:*)",
+      "Bash(scoop search:*)",
+      "Bash(scoop bucket:*)",
+      "Bash(cmd.exe /c \"winget search grafana\")",
+      "Bash(podman-compose build:*)",
+      "Bash(podman build:*)"
     ]
   }
 }

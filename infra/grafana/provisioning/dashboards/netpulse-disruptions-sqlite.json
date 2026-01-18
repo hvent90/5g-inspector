@@ -641,7 +641,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, event_type, COUNT(*) as count FROM disruption_events GROUP BY strftime('%Y-%m-%d %H', datetime(timestamp_unix, 'unixepoch')), event_type ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Disruption Events Over Time",
@@ -729,9 +730,10 @@
             "uid": "sqlite"
           },
           "rawQuery": true,
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, success as \"Connectivity\" FROM continuous_ping ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, success as \"Connectivity\" FROM continuous_ping ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Connectivity Status Timeline",
@@ -875,7 +877,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_sinr as \"5G SINR\", lte_sinr as \"4G SINR\" FROM signal_history ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Signal Quality (SINR)",
@@ -1006,7 +1009,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rsrp as \"5G RSRP\", lte_rsrp as \"4G RSRP\" FROM signal_history ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Signal Strength (RSRP)",
@@ -1141,7 +1145,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_pci as \"5G PCI\", lte_pci as \"4G PCI\" FROM signal_history ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Physical Cell ID (PCI) Changes",
@@ -1263,7 +1268,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, nr_gnb_id as \"5G gNodeB\", lte_enb_id as \"4G eNodeB\" FROM signal_history ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Tower ID Changes",
@@ -1385,7 +1391,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(nr_bands, 'n', ''), ',', '') AS INTEGER) as \"5G Band\" FROM signal_history WHERE nr_bands IS NOT NULL AND nr_bands != '' ORDER BY time",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         },
         {
           "datasource": {
@@ -1395,7 +1402,8 @@
           "rawQuery": true,
           "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(lte_bands, 'B', ''), ',', '') AS INTEGER) as \"4G Band\" FROM signal_history WHERE lte_bands IS NOT NULL AND lte_bands != '' ORDER BY time",
           "refId": "B",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Frequency Band Switches",

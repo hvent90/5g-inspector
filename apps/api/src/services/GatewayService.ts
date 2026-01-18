@@ -544,33 +544,54 @@ const makeGatewayService = (
         }
 
         // Make HTTP request using native fetch wrapped in Effect
-        const response = yield* Effect.tryPromise({
+        const { status, body } = yield* Effect.tryPromise({
           try: async () => {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), config.timeoutSeconds * 1000)
             try {
               const res = await fetch(gatewayUrl, { signal: controller.signal })
               clearTimeout(timeoutId)
-              return res
+              const text = await res.text()
+              return { status: res.status, body: text }
             } catch (e) {
               clearTimeout(timeoutId)
               throw e
             }
           },
-          catch: (error) => new GatewayError("http_error", `Fetch error: ${error}`, error)
-        })
+          catch: (error) => {
+            const errorType = String(error).includes("abort") ? "timeout"
+              : String(error).includes("ECONNREFUSED") ? "connection_refused"
+              : "http_error"
+            return new GatewayError(errorType, `Fetch error: ${error}`, error)
+          }
+        }).pipe(
+          Effect.tapError((error) => handleError(`[${error.type}] ${error.message}`))
+        )
+
+        // Check HTTP status
+        if (status !== 200) {
+          const preview = body.slice(0, 500)
+          const error = new GatewayError("http_error", `HTTP ${status}: ${preview}`, { status, body })
+          yield* handleError(`[http_error] HTTP ${status}: ${preview}`)
+          return yield* Effect.fail(error)
+        }
 
         // Parse JSON response
-        const json = yield* Effect.tryPromise({
-          try: () => response.json(),
-          catch: (error) => new GatewayError("parse_error", `Failed to parse JSON: ${error}`, error)
-        })
+        const json = yield* Effect.try({
+          try: () => JSON.parse(body),
+          catch: (error) => {
+            const preview = body.slice(0, 500)
+            return new GatewayError("parse_error", `Failed to parse JSON: ${error}. Raw: ${preview}`, { error, body })
+          }
+        }).pipe(
+          Effect.tapError((error) => handleError(`[${error.type}] ${error.message}`))
+        )
 
         // Decode with schema
         const rawData = yield* Schema.decodeUnknown(GatewayResponseSchema)(json).pipe(
           Effect.catchAll((error) =>
             Effect.gen(function* () {
-              yield* handleError(`Schema validation failed: ${error}`)
+              yield* handleError(`[parse_error] Schema validation failed: ${error}`)
               return yield* Effect.fail(
                 new GatewayError("parse_error", "Schema validation failed", error)
               )
@@ -613,7 +634,20 @@ const makeGatewayService = (
       if (!running) return
 
       yield* pollOnce.pipe(
-        Effect.catchAll((error) => Effect.logWarning(`Poll error: ${error._tag}`))
+        Effect.catchAll((error) => {
+          if (error._tag === "GatewayError") {
+            const causeInfo = error.cause instanceof Error
+              ? ` | cause: ${error.cause.message}`
+              : error.cause
+                ? ` | cause: ${String(error.cause)}`
+                : ""
+            return Effect.logWarning(`Poll error: [${error.type}] ${error.message}${causeInfo}`)
+          }
+          if (error._tag === "CircuitOpenError") {
+            return Effect.logWarning(`Poll error: Circuit breaker open, recovery in ${error.recoveryTimeRemaining}ms`)
+          }
+          return Effect.logWarning(`Poll error: ${error._tag} - ${JSON.stringify(error)}`)
+        })
       )
     })
 

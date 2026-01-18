@@ -3,11 +3,11 @@
  *
  * Features:
  * - Live signal strength metrics (5G/LTE)
- * - Line charts with proper X/Y axis labels
+ * - Reusable MetricChart component
  * - Connection status indicators
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -39,8 +39,12 @@ interface HistoryPoint {
   timestamp: number;
   nr_sinr: number | null;
   nr_rsrp: number | null;
+  nr_rsrq: number | null;
+  nr_rssi: number | null;
   lte_sinr: number | null;
   lte_rsrp: number | null;
+  lte_rsrq: number | null;
+  lte_rssi: number | null;
 }
 
 // Map SINR to signal bars (0-5)
@@ -94,20 +98,6 @@ function formatConnectionMode(mode: string | undefined): { label: string; descri
   }
 }
 
-// Format timestamp for X-axis
-function formatTime(timestamp: number): string {
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-// Chart data point for recharts
-interface ChartDataPoint {
-  timestamp: number;
-  time: string;
-  nr_sinr: number | null;
-  lte_sinr: number | null;
-}
-
 // Time range options in seconds
 const TIME_RANGES = [
   { label: '1m', seconds: 60 },
@@ -122,15 +112,6 @@ const TIME_RANGES = [
 ] as const;
 
 type TimeRangeSeconds = typeof TIME_RANGES[number]['seconds'];
-
-interface SignalChartProps {
-  data: HistoryPoint[];
-  has5g: boolean;
-  has4g: boolean;
-  is5gSaMode: boolean;
-  timeRange: TimeRangeSeconds;
-  onTimeRangeChange: (range: TimeRangeSeconds) => void;
-}
 
 // Format timestamp for X-axis based on time range
 function formatTimeForRange(timestamp: number, rangeSeconds: number): string {
@@ -147,34 +128,95 @@ function formatTimeForRange(timestamp: number, rangeSeconds: number): string {
   }
 }
 
-function SignalChart({ data, has5g, has4g, is5gSaMode, timeRange, onTimeRangeChange }: SignalChartProps) {
-  // Filter data based on time range
-  const now = Date.now();
-  const cutoff = now - timeRange * 1000;
-  const filteredData = data.filter(point => point.timestamp >= cutoff);
+// ============================================================================
+// MetricChart - Reusable chart component
+// ============================================================================
 
-  // Transform data for recharts - use timestamp as X value for proper domain
-  const chartData: ChartDataPoint[] = filteredData.map(point => ({
-    timestamp: point.timestamp,
-    time: formatTimeForRange(point.timestamp, timeRange),
-    nr_sinr: point.nr_sinr,
-    lte_sinr: point.lte_sinr,
-  }));
+interface MetricLine {
+  dataKey: string;
+  name: string;
+  color: string;
+  active: boolean;
+}
 
-  // Calculate Y-axis domain based on actual data
-  const allValues = chartData.flatMap(d => [d.nr_sinr, d.lte_sinr]).filter((v): v is number => v !== null);
-  const minVal = allValues.length > 0 ? Math.min(...allValues) : -10;
-  const maxVal = allValues.length > 0 ? Math.max(...allValues) : 30;
-  const yMin = Math.floor(minVal / 5) * 5 - 5;
-  const yMax = Math.ceil(maxVal / 5) * 5 + 5;
+interface ThresholdLine {
+  value: number;
+  color: string;
+  label: string;
+}
 
-  // X-axis domain: full time range from cutoff to now
-  const xDomain: [number, number] = [cutoff, now];
+interface MetricChartProps {
+  title: string;
+  unit: string;
+  data: HistoryPoint[];
+  lines: MetricLine[];
+  thresholds?: ThresholdLine[];
+  timeRange: TimeRangeSeconds;
+  onTimeRangeChange: (range: TimeRangeSeconds) => void;
+  yDomainPadding?: number;
+}
+
+// Max points to render in chart (performance limit)
+const MAX_CHART_POINTS = 300;
+
+// Downsample data for chart rendering - take every Nth point
+function downsampleForChart(data: HistoryPoint[], maxPoints: number): HistoryPoint[] {
+  if (data.length <= maxPoints) return data;
+  const step = Math.ceil(data.length / maxPoints);
+  const result: HistoryPoint[] = [];
+  for (let i = 0; i < data.length; i += step) {
+    result.push(data[i]);
+  }
+  // Always include the last point for accurate "current" value
+  if (result.length > 0 && data.length > 0 && result[result.length - 1] !== data[data.length - 1]) {
+    result.push(data[data.length - 1]);
+  }
+  return result;
+}
+
+function MetricChart({
+  title,
+  unit,
+  data,
+  lines,
+  thresholds = [],
+  timeRange,
+  onTimeRangeChange,
+  yDomainPadding = 5,
+}: MetricChartProps) {
+  // Memoize filtered and downsampled data - only recalculate when data or timeRange changes
+  const { chartData, xDomain } = useMemo(() => {
+    const now = Date.now();
+    const cutoff = now - timeRange * 1000;
+    const filtered = data.filter(point => point.timestamp >= cutoff);
+    const downsampled = downsampleForChart(filtered, MAX_CHART_POINTS);
+    return {
+      chartData: downsampled,
+      xDomain: [cutoff, now] as [number, number],
+    };
+  }, [data, timeRange]);
+
+  // Get active lines (memoized)
+  const activeLines = useMemo(() => lines.filter(l => l.active), [lines]);
+
+  // Calculate Y-axis domain based on actual data (memoized)
+  const { yMin, yMax } = useMemo(() => {
+    const allValues = chartData.flatMap(d =>
+      activeLines.map(line => d[line.dataKey as keyof HistoryPoint] as number | null)
+    ).filter((v): v is number => v !== null);
+
+    const minVal = allValues.length > 0 ? Math.min(...allValues) : -10;
+    const maxVal = allValues.length > 0 ? Math.max(...allValues) : 30;
+    return {
+      yMin: Math.floor(minVal / yDomainPadding) * yDomainPadding - yDomainPadding,
+      yMax: Math.ceil(maxVal / yDomainPadding) * yDomainPadding + yDomainPadding,
+    };
+  }, [chartData, activeLines, yDomainPadding]);
 
   return (
     <div className="signal-chart-container">
       <div className="signal-chart-header">
-        <span className="signal-chart-title">SINR History (dB)</span>
+        <span className="signal-chart-title">{title} ({unit})</span>
         <div className="signal-chart-controls">
           <div className="time-range-selector">
             {TIME_RANGES.map(({ label, seconds }) => (
@@ -188,9 +230,13 @@ function SignalChart({ data, has5g, has4g, is5gSaMode, timeRange, onTimeRangeCha
             ))}
           </div>
           <div className="signal-chart-legend">
-            {has5g && <span className="legend-5g">5G NR</span>}
-            {has4g && <span className="legend-4g">4G LTE</span>}
-            {is5gSaMode && !has4g && <span className="legend-inactive">4G: SA Mode</span>}
+            {lines.map(line => (
+              line.active ? (
+                <span key={line.dataKey} className="legend-item-dynamic" style={{ '--line-color': line.color } as React.CSSProperties}>
+                  {line.name}
+                </span>
+              ) : null
+            ))}
           </div>
         </div>
       </div>
@@ -200,7 +246,7 @@ function SignalChart({ data, has5g, has4g, is5gSaMode, timeRange, onTimeRangeCha
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={160}>
-          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#808080" opacity={0.3} />
             <XAxis
               dataKey="timestamp"
@@ -219,7 +265,8 @@ function SignalChart({ data, has5g, has4g, is5gSaMode, timeRange, onTimeRangeCha
               tickLine={{ stroke: '#808080' }}
               axisLine={{ stroke: '#808080' }}
               tickFormatter={(value) => `${value}`}
-              width={35}
+              width={40}
+              padding={{ top: 10, bottom: 10 }}
             />
             <Tooltip
               contentStyle={{
@@ -231,54 +278,63 @@ function SignalChart({ data, has5g, has4g, is5gSaMode, timeRange, onTimeRangeCha
               }}
               labelStyle={{ fontWeight: 600, marginBottom: '4px' }}
               labelFormatter={(ts) => new Date(ts as number).toLocaleString()}
-              formatter={(value, name) => [
-                value !== undefined ? `${value} dB` : 'N/A',
-                name === 'nr_sinr' ? '5G SINR' : '4G SINR'
-              ]}
+              formatter={(value, name) => {
+                const line = lines.find(l => l.dataKey === name);
+                return [
+                  value !== undefined ? `${value} ${unit}` : 'N/A',
+                  line?.name || name
+                ];
+              }}
             />
-            {/* Reference lines for signal quality thresholds */}
-            <ReferenceLine y={20} stroke="#008000" strokeDasharray="3 3" opacity={0.5} />
-            <ReferenceLine y={10} stroke="#808000" strokeDasharray="3 3" opacity={0.5} />
-            <ReferenceLine y={0} stroke="#800000" strokeDasharray="3 3" opacity={0.5} />
-            {has5g && (
+            {/* Reference lines for thresholds */}
+            {thresholds.map(threshold => (
+              <ReferenceLine
+                key={threshold.value}
+                y={threshold.value}
+                stroke={threshold.color}
+                strokeDasharray="3 3"
+                opacity={0.5}
+              />
+            ))}
+            {/* Data lines */}
+            {activeLines.map(line => (
               <Line
+                key={line.dataKey}
                 type="monotone"
-                dataKey="nr_sinr"
-                stroke="#000080"
+                dataKey={line.dataKey}
+                stroke={line.color}
                 strokeWidth={2}
                 dot={false}
                 connectNulls
-                name="nr_sinr"
+                name={line.dataKey}
                 isAnimationActive={false}
               />
-            )}
-            {has4g && (
-              <Line
-                type="monotone"
-                dataKey="lte_sinr"
-                stroke="#008000"
-                strokeWidth={2}
-                dot={false}
-                connectNulls
-                name="lte_sinr"
-                isAnimationActive={false}
-              />
-            )}
+            ))}
           </LineChart>
         </ResponsiveContainer>
       )}
-      <div className="signal-chart-thresholds">
-        <span className="threshold good">20+ Excellent</span>
-        <span className="threshold ok">10-20 Good</span>
-        <span className="threshold bad">&lt;10 Poor</span>
-      </div>
+      {thresholds.length > 0 && (
+        <div className="signal-chart-thresholds">
+          {thresholds.map(threshold => (
+            <span key={threshold.value} className="threshold" style={{ borderColor: threshold.color, color: threshold.color }}>
+              {threshold.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// Max history to keep (7 days at 1s refresh = 604800 points)
-// Note: For very long sessions, memory usage will grow
-const MAX_HISTORY_POINTS = 604800;
+// ============================================================================
+// SignalMonitor - Main component
+// ============================================================================
+
+// Max history to keep in memory (1 hour at 1s refresh = 3600 points)
+const MAX_HISTORY_POINTS = 3600;
+
+// Throttle interval for state updates (ms) - update UI every 2 seconds instead of every second
+const HISTORY_UPDATE_INTERVAL = 2000;
 
 export function SignalMonitor() {
   const [currentSignal, setCurrentSignal] = useState<SignalData | null>(null);
@@ -286,6 +342,7 @@ export function SignalMonitor() {
   const [isConnected, setIsConnected] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRangeSeconds>(60);
   const historyRef = useRef<HistoryPoint[]>([]);
+  const lastHistoryUpdateRef = useRef<number>(0);
 
   // Fetch current signal
   const fetchSignal = useCallback(async () => {
@@ -296,16 +353,32 @@ export function SignalMonitor() {
         setCurrentSignal(data);
         setIsConnected(true);
 
-        // Add to history (keep up to 1 hour of data)
+        // Add to history with all metrics
+        const now = Date.now();
         const point: HistoryPoint = {
-          timestamp: Date.now(),
+          timestamp: now,
           nr_sinr: data.nr?.sinr ?? null,
           nr_rsrp: data.nr?.rsrp ?? null,
+          nr_rsrq: data.nr?.rsrq ?? null,
+          nr_rssi: data.nr?.rssi ?? null,
           lte_sinr: data.lte?.sinr ?? null,
           lte_rsrp: data.lte?.rsrp ?? null,
+          lte_rsrq: data.lte?.rsrq ?? null,
+          lte_rssi: data.lte?.rssi ?? null,
         };
-        historyRef.current = [...historyRef.current.slice(-(MAX_HISTORY_POINTS - 1)), point];
-        setHistory(historyRef.current);
+
+        // Mutate ref directly (no array copy) - keep last N points
+        if (historyRef.current.length >= MAX_HISTORY_POINTS) {
+          historyRef.current.shift(); // Remove oldest
+        }
+        historyRef.current.push(point);
+
+        // Throttle state updates to reduce re-renders
+        if (now - lastHistoryUpdateRef.current >= HISTORY_UPDATE_INTERVAL) {
+          lastHistoryUpdateRef.current = now;
+          // Create new array reference only when we actually update state
+          setHistory([...historyRef.current]);
+        }
       } else {
         setIsConnected(false);
       }
@@ -336,106 +409,143 @@ export function SignalMonitor() {
   const lteSinrBars = sinrToBars(lte?.sinr ?? null);
   const lteRsrpBars = rsrpToBars(lte?.rsrp ?? null);
 
+  // Chart configurations - memoized to prevent re-creates
+  const sinrRsrqLines = useMemo<MetricLine[]>(() => [
+    { dataKey: 'nr_sinr', name: '5G SINR', color: '#000080', active: has5g },
+    { dataKey: 'nr_rsrq', name: '5G RSRQ', color: '#4040c0', active: has5g },
+    { dataKey: 'lte_sinr', name: '4G SINR', color: '#008000', active: has4g },
+    { dataKey: 'lte_rsrq', name: '4G RSRQ', color: '#40c040', active: has4g },
+  ], [has5g, has4g]);
+
+  const sinrThresholds = useMemo<ThresholdLine[]>(() => [
+    { value: 20, color: '#008000', label: '20+ Excellent' },
+    { value: 10, color: '#808000', label: '10-20 Good' },
+    { value: 0, color: '#800000', label: '<10 Poor' },
+  ], []);
+
+  const rsrpRssiLines = useMemo<MetricLine[]>(() => [
+    { dataKey: 'nr_rsrp', name: '5G RSRP', color: '#800080', active: has5g },
+    { dataKey: 'nr_rssi', name: '5G RSSI', color: '#c040c0', active: has5g },
+    { dataKey: 'lte_rsrp', name: '4G RSRP', color: '#808000', active: has4g },
+    { dataKey: 'lte_rssi', name: '4G RSSI', color: '#c0c040', active: has4g },
+  ], [has5g, has4g]);
+
+  const rsrpThresholds = useMemo<ThresholdLine[]>(() => [
+    { value: -80, color: '#008000', label: '-80+ Excellent' },
+    { value: -100, color: '#808000', label: '-100 to -80 Good' },
+    { value: -110, color: '#800000', label: '<-110 Poor' },
+  ], []);
+
   return (
-    <div className="signal-monitor">
-      {/* Connection Status */}
-      <div className="signal-status-row">
-        <div className={`signal-status-indicator ${isConnected ? 'connected' : ''}`}>
-          {isConnected ? '\u25CF' : '\u25CB'}
-        </div>
-        <span className={`signal-status-text ${connectionMode === 'SA' ? 'mode-sa' : connectionMode === 'NSA' ? 'mode-nsa' : ''}`}>
-          {isConnected ? modeInfo.label : 'Disconnected'}
-        </span>
-        {modeInfo.description && (
-          <span className="signal-mode-desc" title={modeInfo.description}>
-            {is5gSaMode ? '(No LTE anchor)' : ''}
+    <div className="signal-monitor signal-monitor-horizontal">
+      {/* Left Sidebar: Status + Metrics */}
+      <div className="signal-monitor-sidebar">
+        {/* Connection Status */}
+        <div className="signal-status-row">
+          <div className={`signal-status-indicator ${isConnected ? 'connected' : ''}`}>
+            {isConnected ? '\u25CF' : '\u25CB'}
+          </div>
+          <span className={`signal-status-text ${connectionMode === 'SA' ? 'mode-sa' : connectionMode === 'NSA' ? 'mode-nsa' : ''}`}>
+            {isConnected ? modeInfo.label : 'Disconnected'}
           </span>
-        )}
-        {nr?.bands && nr.bands.length > 0 && (
-          <span className="signal-bands">{nr.bands.join(', ').toUpperCase()}</span>
-        )}
+          {modeInfo.description && (
+            <span className="signal-mode-desc" title={modeInfo.description}>
+              {is5gSaMode ? '(No LTE anchor)' : ''}
+            </span>
+          )}
+          {nr?.bands && nr.bands.length > 0 && (
+            <span className="signal-bands">{nr.bands.join(', ').toUpperCase()}</span>
+          )}
+        </div>
+
+        {/* Primary Metrics - 5G */}
+        <div className="signal-metrics-section signal-metrics-compact">
+          <div className="signal-metrics-header">5G NR</div>
+          {has5g ? (
+            <div className="signal-metrics-grid-compact">
+              <div className="signal-metric">
+                <span className="signal-metric-label">SINR</span>
+                <span className={`signal-metric-value ${getQualityClass(nrSinrBars)}`}>{nr?.sinr}</span>
+                <span className="signal-metric-unit">dB</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSRP</span>
+                <span className={`signal-metric-value ${getQualityClass(nrRsrpBars)}`}>{nr?.rsrp}</span>
+                <span className="signal-metric-unit">dBm</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSRQ</span>
+                <span className="signal-metric-value">{nr?.rsrq}</span>
+                <span className="signal-metric-unit">dB</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSSI</span>
+                <span className="signal-metric-value">{nr?.rssi}</span>
+                <span className="signal-metric-unit">dBm</span>
+              </div>
+            </div>
+          ) : (
+            <div className="signal-metrics-inactive">No 5G signal</div>
+          )}
+        </div>
+
+        {/* Primary Metrics - 4G */}
+        <div className={`signal-metrics-section signal-metrics-compact ${!has4g ? 'inactive' : ''}`}>
+          <div className="signal-metrics-header">4G LTE {is5gSaMode && <span className="signal-metrics-note">(SA mode)</span>}</div>
+          {has4g ? (
+            <div className="signal-metrics-grid-compact">
+              <div className="signal-metric">
+                <span className="signal-metric-label">SINR</span>
+                <span className={`signal-metric-value ${getQualityClass(lteSinrBars)}`}>{lte?.sinr}</span>
+                <span className="signal-metric-unit">dB</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSRP</span>
+                <span className={`signal-metric-value ${getQualityClass(lteRsrpBars)}`}>{lte?.rsrp}</span>
+                <span className="signal-metric-unit">dBm</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSRQ</span>
+                <span className="signal-metric-value">{lte?.rsrq}</span>
+                <span className="signal-metric-unit">dB</span>
+              </div>
+              <div className="signal-metric">
+                <span className="signal-metric-label">RSSI</span>
+                <span className="signal-metric-value">{lte?.rssi}</span>
+                <span className="signal-metric-unit">dBm</span>
+              </div>
+            </div>
+          ) : (
+            <div className="signal-metrics-inactive">{is5gSaMode ? '5G SA - No LTE' : 'No LTE signal'}</div>
+          )}
+        </div>
       </div>
 
-      {/* Primary Metrics - 5G */}
-      <div className="signal-metrics-section">
-        <div className="signal-metrics-header">5G NR</div>
-        {has5g ? (
-          <div className="signal-metrics-grid">
-            <div className="signal-metric">
-              <span className="signal-metric-label">SINR</span>
-              <span className={`signal-metric-value ${getQualityClass(nrSinrBars)}`}>{nr?.sinr}</span>
-              <span className="signal-metric-unit">dB</span>
-              <span className="signal-metric-desc">Signal quality</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSRP</span>
-              <span className={`signal-metric-value ${getQualityClass(nrRsrpBars)}`}>{nr?.rsrp}</span>
-              <span className="signal-metric-unit">dBm</span>
-              <span className="signal-metric-desc">Signal power</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSRQ</span>
-              <span className="signal-metric-value">{nr?.rsrq}</span>
-              <span className="signal-metric-unit">dB</span>
-              <span className="signal-metric-desc">Signal quality ratio</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSSI</span>
-              <span className="signal-metric-value">{nr?.rssi}</span>
-              <span className="signal-metric-unit">dBm</span>
-              <span className="signal-metric-desc">Total received power</span>
-            </div>
-          </div>
-        ) : (
-          <div className="signal-metrics-inactive">No 5G signal</div>
-        )}
+      {/* Right: Charts Side-by-Side */}
+      <div className="signal-monitor-charts">
+        {/* SINR + RSRQ Chart */}
+        <MetricChart
+          title="SINR / RSRQ"
+          unit="dB"
+          data={history}
+          lines={sinrRsrqLines}
+          thresholds={sinrThresholds}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+        />
+
+        {/* RSRP + RSSI Chart */}
+        <MetricChart
+          title="RSRP / RSSI"
+          unit="dBm"
+          data={history}
+          lines={rsrpRssiLines}
+          thresholds={rsrpThresholds}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          yDomainPadding={10}
+        />
       </div>
-
-      {/* Primary Metrics - 4G */}
-      <div className={`signal-metrics-section ${!has4g ? 'inactive' : ''}`}>
-        <div className="signal-metrics-header">4G LTE {is5gSaMode && <span className="signal-metrics-note">(Not used in SA mode)</span>}</div>
-        {has4g ? (
-          <div className="signal-metrics-grid">
-            <div className="signal-metric">
-              <span className="signal-metric-label">SINR</span>
-              <span className={`signal-metric-value ${getQualityClass(lteSinrBars)}`}>{lte?.sinr}</span>
-              <span className="signal-metric-unit">dB</span>
-              <span className="signal-metric-desc">Signal quality</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSRP</span>
-              <span className={`signal-metric-value ${getQualityClass(lteRsrpBars)}`}>{lte?.rsrp}</span>
-              <span className="signal-metric-unit">dBm</span>
-              <span className="signal-metric-desc">Signal power</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSRQ</span>
-              <span className="signal-metric-value">{lte?.rsrq}</span>
-              <span className="signal-metric-unit">dB</span>
-              <span className="signal-metric-desc">Signal quality ratio</span>
-            </div>
-            <div className="signal-metric">
-              <span className="signal-metric-label">RSSI</span>
-              <span className="signal-metric-value">{lte?.rssi}</span>
-              <span className="signal-metric-unit">dBm</span>
-              <span className="signal-metric-desc">Total received power</span>
-            </div>
-          </div>
-        ) : (
-          <div className="signal-metrics-inactive">{is5gSaMode ? '5G Standalone - no LTE anchor' : 'No LTE signal'}</div>
-        )}
-      </div>
-
-      {/* SINR Trend Chart */}
-      <SignalChart
-        data={history}
-        has5g={has5g}
-        has4g={has4g}
-        is5gSaMode={is5gSaMode}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-      />
-
     </div>
   );
 }

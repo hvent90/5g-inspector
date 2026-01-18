@@ -1,0 +1,65 @@
+# Combined Grafana + NetPulse API container
+# Uses Bun as base and installs Grafana on top
+
+FROM oven/bun:1.1-debian AS base
+
+# Install Grafana, supervisor, and build tools for better-sqlite3
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    software-properties-common \
+    wget \
+    supervisor \
+    build-essential \
+    python3 \
+    && wget -q -O /usr/share/keyrings/grafana.key https://apt.grafana.com/gpg.key \
+    && echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://apt.grafana.com stable main" | tee -a /etc/apt/sources.list.d/grafana.list \
+    && apt-get update \
+    && apt-get install -y grafana \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install SQLite plugin for Grafana
+RUN grafana-cli plugins install frser-sqlite-datasource
+
+# Create app directory - copy entire monorepo structure
+WORKDIR /app
+
+# Copy all package files first for caching
+COPY package.json ./
+COPY bun.lock* ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+
+# Copy shared package source (needed during install for workspace linking)
+COPY packages/shared ./packages/shared
+
+# Install all dependencies from root (handles workspaces)
+RUN bun install
+
+# Copy API source
+COPY apps/api/src ./apps/api/src
+COPY apps/api/tsconfig.json ./apps/api/
+
+# Create supervisor config
+COPY infra/supervisord-debian.conf /etc/supervisor/conf.d/netpulse.conf
+
+# Copy Grafana provisioning
+COPY infra/grafana/provisioning /etc/grafana/provisioning
+
+# Ensure Grafana data directory exists
+RUN mkdir -p /var/lib/grafana && chown -R grafana:grafana /var/lib/grafana
+
+# Environment variables
+ENV DB_PATH=/var/lib/grafana/signal_history.db
+ENV GF_SECURITY_ADMIN_USER=admin
+ENV GF_SECURITY_ADMIN_PASSWORD=netpulse123
+ENV GF_USERS_ALLOW_SIGN_UP=false
+ENV GF_AUTH_ANONYMOUS_ENABLED=true
+ENV GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+ENV GF_UNIFIED_ALERTING_ENABLED=true
+ENV GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+
+EXPOSE 3000 3001
+
+# Use supervisor to run both services
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]

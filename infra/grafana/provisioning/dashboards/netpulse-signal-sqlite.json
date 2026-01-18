@@ -6,7 +6,7 @@
         "enable": true,
         "iconColor": "red",
         "name": "Disruption Events",
-        "rawQuery": "SELECT timestamp_unix as time, event_type || ': ' || description as text, severity as tags FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 100",
+        "rawQuery": "SELECT timestamp_unix * 1000 as time, event_type || ': ' || description as text, severity as tags FROM disruption_events ORDER BY timestamp_unix DESC LIMIT 100",
         "hide": false
       }
     ]
@@ -64,9 +64,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_rsrp as value, '5G RSRP' as metric FROM signal_history WHERE nr_rsrp IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rsrp as value, '5G RSRP' as metric FROM signal_history WHERE nr_rsrp IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G NR RSRP (Reference Signal Received Power)",
@@ -111,9 +112,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_rsrq as value, '5G RSRQ' as metric FROM signal_history WHERE nr_rsrq IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rsrq as value, '5G RSRQ' as metric FROM signal_history WHERE nr_rsrq IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G NR RSRQ (Reference Signal Received Quality)",
@@ -158,9 +160,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_sinr as value, '5G SINR' as metric FROM signal_history WHERE nr_sinr IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_sinr as value, '5G SINR' as metric FROM signal_history WHERE nr_sinr IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G NR SINR (Signal to Interference Noise Ratio)",
@@ -196,9 +199,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_rssi as value, '5G RSSI' as metric FROM signal_history WHERE nr_rssi IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rssi as value, '5G RSSI' as metric FROM signal_history WHERE nr_rssi IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G NR RSSI (Received Signal Strength Indicator)",
@@ -250,9 +254,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_rsrp as value, '4G RSRP' as metric FROM signal_history WHERE lte_rsrp IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_rsrp as value, '4G RSRP' as metric FROM signal_history WHERE lte_rsrp IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G LTE RSRP (Reference Signal Received Power)",
@@ -297,9 +302,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_rsrq as value, '4G RSRQ' as metric FROM signal_history WHERE lte_rsrq IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_rsrq as value, '4G RSRQ' as metric FROM signal_history WHERE lte_rsrq IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G LTE RSRQ (Reference Signal Received Quality)",
@@ -344,9 +350,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_sinr as value, '4G SINR' as metric FROM signal_history WHERE lte_sinr IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_sinr as value, '4G SINR' as metric FROM signal_history WHERE lte_sinr IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G LTE SINR (Signal to Interference Noise Ratio)",
@@ -382,9 +389,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_rssi as value, '4G RSSI' as metric FROM signal_history WHERE lte_rssi IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_rssi as value, '4G RSSI' as metric FROM signal_history WHERE lte_rssi IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G LTE RSSI (Received Signal Strength Indicator)",
@@ -436,14 +444,16 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_rsrp as value, '5G RSRP' as metric FROM signal_history WHERE nr_rsrp IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_rsrp as value, '5G RSRP' as metric FROM signal_history WHERE nr_rsrp IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         },
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_rsrp as value, '4G RSRP' as metric FROM signal_history WHERE lte_rsrp IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_rsrp as value, '4G RSRP' as metric FROM signal_history WHERE lte_rsrp IS NOT NULL ORDER BY timestamp_unix",
           "refId": "B",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "RSRP Comparison (5G vs 4G)",
@@ -488,14 +498,16 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_sinr as value, '5G SINR' as metric FROM signal_history WHERE nr_sinr IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_sinr as value, '5G SINR' as metric FROM signal_history WHERE nr_sinr IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         },
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_sinr as value, '4G SINR' as metric FROM signal_history WHERE lte_sinr IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_sinr as value, '4G SINR' as metric FROM signal_history WHERE lte_sinr IS NOT NULL ORDER BY timestamp_unix",
           "refId": "B",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "SINR Comparison (5G vs 4G)",
@@ -646,9 +658,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_gnb_id as value, '5G gNB ID' as metric FROM signal_history WHERE nr_gnb_id IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_gnb_id as value, '5G gNB ID' as metric FROM signal_history WHERE nr_gnb_id IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G gNodeB ID (Tower)",
@@ -683,9 +696,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_enb_id as value, '4G eNB ID' as metric FROM signal_history WHERE lte_enb_id IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_enb_id as value, '4G eNB ID' as metric FROM signal_history WHERE lte_enb_id IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G eNodeB ID (Tower)",
@@ -732,9 +746,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, nr_bands as value, '5G Band' as metric FROM signal_history WHERE nr_bands IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_bands as value, '5G Band' as metric FROM signal_history WHERE nr_bands IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "5G NR Band Over Time",
@@ -775,9 +790,10 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix as time, lte_bands as value, '4G Band' as metric FROM signal_history WHERE lte_bands IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_bands as value, '4G Band' as metric FROM signal_history WHERE lte_bands IS NOT NULL ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "format": "time_series",
+          "timeColumns": ["time"]
         }
       ],
       "title": "4G LTE Band Over Time",

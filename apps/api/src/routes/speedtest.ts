@@ -143,33 +143,14 @@ export const SpeedtestRoutes = HttpRouter.empty.pipe(
 
       // Parse query params (frontend sends tool as query param)
       const queryTool = url.searchParams.get("tool") ?? undefined
-
-      // Parse request body if present (also support body params)
-      const bodyParams = yield* HttpServerRequest.schemaBodyJson(TriggerSpeedtestSchema).pipe(
-        Effect.catchAll(() => Effect.succeed({
-          server_id: undefined,
-          tool: undefined,
-          triggered_by: undefined,
-          network_context: undefined,
-          enable_latency_probe: undefined,
-        }))
-      )
-
-      // Query params take precedence over body params
-      const params = {
-        ...bodyParams,
-        tool: queryTool ?? bodyParams.tool,
-      }
+      const queryTriggeredBy = url.searchParams.get("triggered_by") ?? undefined
 
       const service = yield* SpeedtestService
 
-      // Run the actual speedtest
+      // Run the actual speedtest with query params
       const result = yield* service.runSpeedtest({
-        tool: params.tool,
-        serverId: params.server_id,
-        triggeredBy: params.triggered_by ?? "api",
-        contextOverride: params.network_context as NetworkContext | undefined,
-        enableLatencyProbe: params.enable_latency_probe,
+        tool: queryTool,
+        triggeredBy: queryTriggeredBy ?? "api",
       })
 
       // Return appropriate status based on result

@@ -526,18 +526,20 @@
             "type": "frser-sqlite-datasource",
             "uid": "sqlite"
           },
-          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
-          "refId": "A"
+          "rawQueryText": "SELECT timestamp_unix * 1000 as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as 'Download' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "A",
+          "timeColumns": ["time"]
         },
         {
           "datasource": {
             "type": "frser-sqlite-datasource",
             "uid": "sqlite"
           },
-          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
-          "refId": "B"
+          "rawQueryText": "SELECT timestamp_unix * 1000 as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, upload_mbps as 'Upload' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "B",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Speed Test History (SQLite)",
@@ -644,18 +646,20 @@
             "type": "frser-sqlite-datasource",
             "uid": "sqlite"
           },
-          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
-          "refId": "A"
+          "rawQueryText": "SELECT timestamp_unix * 1000 as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as 'Ping' FROM speedtest_results ORDER BY timestamp_unix",
+          "refId": "A",
+          "timeColumns": ["time"]
         },
         {
           "datasource": {
             "type": "frser-sqlite-datasource",
             "uid": "sqlite"
           },
-          "rawQueryText": "SELECT datetime(timestamp_unix, 'unixepoch') as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
-          "rawSql": "SELECT datetime(timestamp_unix, 'unixepoch') as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
-          "refId": "B"
+          "rawQueryText": "SELECT timestamp_unix * 1000 as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as 'Jitter' FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
+          "refId": "B",
+          "timeColumns": ["time"]
         }
       ],
       "title": "Latency History (SQLite)",
@@ -841,10 +845,10 @@
             "type": "frser-sqlite-datasource",
             "uid": "sqlite"
           },
-          "rawQueryText": "SELECT timestamp_unix as time, COALESCE(packet_loss_percent, 0) as value, 'Packet Loss' as metric FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT timestamp_unix as time, COALESCE(packet_loss_percent, 0) as value, 'Packet Loss' as metric FROM speedtest_results ORDER BY timestamp_unix",
+          "rawQueryText": "SELECT timestamp_unix * 1000 as time, COALESCE(packet_loss_percent, 0) as 'Packet Loss' FROM speedtest_results ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, COALESCE(packet_loss_percent, 0) as 'Packet Loss' FROM speedtest_results ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series"
+          "timeColumns": ["time"]
         }
       ],
       "title": "Packet Loss Over Time",

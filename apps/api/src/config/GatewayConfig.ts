@@ -30,7 +30,7 @@ export class GatewayConfigService extends Context.Tag("GatewayConfigService")<
 const defaultConfig: GatewayConfig = {
   host: "192.168.12.1",
   port: 80,
-  pollIntervalMs: 200,
+  pollIntervalMs: 2000,
   timeoutSeconds: 2.0,
   failureThreshold: 3,
   recoveryTimeoutSeconds: 30,

@@ -104,10 +104,11 @@ interface ToolResult {
 // Constants
 // ============================================
 
-const ALL_KNOWN_TOOLS = ["ookla-speedtest", "speedtest-cli"] as const
+const ALL_KNOWN_TOOLS = ["fast-cli", "ookla-speedtest", "speedtest-cli"] as const
 
 const DEFAULT_CONFIG: SpeedtestConfig = {
-  preferred_tools: ["ookla-speedtest", "speedtest-cli"],
+  // fast-cli (Netflix) is preferred as ISPs can't easily game it
+  preferred_tools: ["fast-cli", "ookla-speedtest", "speedtest-cli"],
   ookla_server_id: null,
   timeout_seconds: 120,
   idle_hours: [2, 3, 4, 5],
@@ -130,13 +131,25 @@ const runCommand = (
   Effect.async<{ stdout: string; stderr: string; code: number }, SpeedtestError>(
     (resume) => {
       const [executable, ...args] = cmd
+      const isWindows = os.platform() === "win32"
+
       const proc = ChildProcess.spawn(executable, args, {
-        timeout: timeout * 1000,
-        shell: os.platform() === "win32",
+        shell: isWindows,
+        windowsHide: true,
       })
 
       let stdout = ""
       let stderr = ""
+      let resolved = false
+
+      // Manual timeout handling (spawn doesn't support timeout option)
+      const timeoutId = setTimeout(() => {
+        if (!resolved) {
+          resolved = true
+          proc.kill("SIGTERM")
+          resume(Effect.fail(new SpeedtestError("timeout", `Command timed out after ${timeout}s`)))
+        }
+      }, timeout * 1000)
 
       proc.stdout?.on("data", (data: Buffer) => {
         stdout += data.toString()
@@ -147,15 +160,17 @@ const runCommand = (
       })
 
       proc.on("close", (code) => {
-        resume(Effect.succeed({ stdout, stderr, code: code ?? 1 }))
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeoutId)
+          resume(Effect.succeed({ stdout, stderr, code: code ?? 1 }))
+        }
       })
 
       proc.on("error", (err: Error & { code?: string }) => {
-        if (err.code === "ETIMEDOUT") {
-          resume(
-            Effect.fail(new SpeedtestError("timeout", `Command timed out after ${timeout}s`))
-          )
-        } else {
+        if (!resolved) {
+          resolved = true
+          clearTimeout(timeoutId)
           resume(Effect.fail(new SpeedtestError("execution", err.message, err)))
         }
       })
@@ -183,11 +198,24 @@ const isSpeedtestCliAvailable = (): Effect.Effect<boolean> =>
   )
 
 /**
+ * Check if fast-cli (Netflix) is available via bunx
+ */
+const isFastCliAvailable = (): Effect.Effect<boolean> =>
+  runCommand(["bunx", "fast-cli", "--help"], 10).pipe(
+    Effect.map(({ code, stdout }) => code === 0 && stdout.includes("fast.com")),
+    Effect.catchAll(() => Effect.succeed(false))
+  )
+
+/**
  * Detect available speedtest tools
  */
 const detectAvailableTools = (): Effect.Effect<string[]> =>
   Effect.gen(function* () {
     const available: string[] = []
+
+    // Check fast-cli first (preferred)
+    const fastOk = yield* isFastCliAvailable()
+    if (fastOk) available.push("fast-cli")
 
     const ooklaOk = yield* isOoklaAvailable()
     if (ooklaOk) available.push("ookla-speedtest")
@@ -316,6 +344,64 @@ const runSpeedtestCli = (timeout: number): Effect.Effect<ToolResult, SpeedtestEr
       isp: client?.isp ?? null,
       tool: "speedtest-cli",
       result_url: null,
+      error_message: null,
+    }
+  })
+
+/**
+ * Run fast-cli (Netflix) via bunx
+ * Uses Netflix CDN - harder for ISPs to prioritize/game
+ */
+const runFastCli = (timeout: number): Effect.Effect<ToolResult, SpeedtestError> =>
+  Effect.gen(function* () {
+    // Run with --json and --upload flags for full data
+    const { stdout, stderr, code } = yield* runCommand(
+      ["bunx", "fast-cli", "--json", "--upload"],
+      timeout
+    )
+
+    if (code !== 0) {
+      return {
+        status: "error" as const,
+        download_mbps: 0,
+        upload_mbps: 0,
+        ping_ms: 0,
+        jitter_ms: null,
+        server_name: null,
+        server_location: null,
+        server_host: null,
+        server_id: null,
+        client_ip: null,
+        isp: null,
+        tool: "fast-cli",
+        result_url: null,
+        error_message: stderr || `Exit code ${code}`,
+      }
+    }
+
+    const data = yield* Effect.try({
+      try: () => JSON.parse(stdout) as Record<string, unknown>,
+      catch: (e) => new SpeedtestError("parse", `JSON parse error: ${e}`),
+    })
+
+    // fast-cli JSON format:
+    // { downloadSpeed, uploadSpeed, latency, bufferBloat, userLocation, serverLocations, userIp }
+    const serverLocations = data.serverLocations as string[] | undefined
+
+    return {
+      status: "success" as const,
+      download_mbps: Math.round(((data.downloadSpeed as number) ?? 0) * 100) / 100,
+      upload_mbps: Math.round(((data.uploadSpeed as number) ?? 0) * 100) / 100,
+      ping_ms: Math.round(((data.latency as number) ?? 0) * 10) / 10,
+      jitter_ms: data.bufferBloat ? Math.round((data.bufferBloat as number) * 10) / 10 : null, // buffer bloat as proxy for jitter
+      server_name: "Netflix CDN",
+      server_location: serverLocations?.[0] ?? (data.userLocation as string) ?? null,
+      server_host: null,
+      server_id: null,
+      client_ip: (data.userIp as string) ?? null,
+      isp: null,
+      tool: "fast-cli",
+      result_url: "https://fast.com",
       error_message: null,
     }
   })
@@ -514,6 +600,8 @@ export const SpeedtestServiceLive = Layer.effect(
       serverId: number | null
     ): Effect.Effect<ToolResult, SpeedtestError> => {
       switch (tool) {
+        case "fast-cli":
+          return runFastCli(timeout)
         case "ookla-speedtest":
           return runOoklaSpeedtest(timeout, serverId)
         case "speedtest-cli":
