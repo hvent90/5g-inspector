@@ -107,7 +107,7 @@ const DEFAULT_CONFIG: SchedulerConfig = {
   time_window_start: undefined,
   time_window_end: undefined,
   run_on_weekends: true,
-  tools_to_run: undefined, // undefined = use default single-tool behavior
+  tools_to_run: ["fast-cli", "cdn-cloudflare", "cdn-aws", "cdn-google"],
   delay_between_tools_seconds: 10,
 }
 
