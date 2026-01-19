@@ -677,12 +677,12 @@
           "mappings": [
             {
               "options": {
-                "false": {
+                "0": {
                   "color": "red",
                   "index": 1,
                   "text": "Failed"
                 },
-                "true": {
+                "1": {
                   "color": "green",
                   "index": 0,
                   "text": "Success"
@@ -719,7 +719,7 @@
         "legend": {
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": false
+          "showLegend": true
         },
         "rowHeight": 0.9,
         "showValue": "never",
@@ -736,7 +736,7 @@
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, CASE WHEN status = 'success' THEN true ELSE false END as \"Connectivity\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CASE WHEN status = 'success' THEN 1 ELSE 0 END as \"Connectivity\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
@@ -752,6 +752,618 @@
         "w": 24,
         "x": 0,
         "y": 18
+      },
+      "id": 200,
+      "panels": [],
+      "title": "Network Quality Metrics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres"
+      },
+      "description": "Ping latency to each target over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 100
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Google DNS"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cloudflare DNS"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#5794F2",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Carrier DNS"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "id": 201,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "min", "max", "lastNotNull"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Google DNS\" FROM network_quality_results WHERE target_host = '8.8.8.8' AND status = 'success' ORDER BY timestamp_unix",
+          "refId": "A",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Cloudflare DNS\" FROM network_quality_results WHERE target_host = '1.1.1.1' AND status = 'success' ORDER BY timestamp_unix",
+          "refId": "B",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Carrier DNS\" FROM network_quality_results WHERE target_host = '208.54.0.1' AND status = 'success' ORDER BY timestamp_unix",
+          "refId": "C",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        }
+      ],
+      "title": "Ping Latency Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres"
+      },
+      "description": "Jitter (latency variance) over time - higher values indicate unstable connection",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 20
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "id": 202,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "lastNotNull"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Google DNS\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
+          "refId": "A",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Cloudflare DNS\" FROM network_quality_results WHERE target_host = '1.1.1.1' ORDER BY timestamp_unix",
+          "refId": "B",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Carrier DNS\" FROM network_quality_results WHERE target_host = '208.54.0.1' ORDER BY timestamp_unix",
+          "refId": "C",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        }
+      ],
+      "title": "Jitter Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres"
+      },
+      "description": "Packet loss percentage over time",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 30,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 203,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "lastNotNull"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, packet_loss_percent as \"Google DNS\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
+          "refId": "A",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, packet_loss_percent as \"Cloudflare DNS\" FROM network_quality_results WHERE target_host = '1.1.1.1' ORDER BY timestamp_unix",
+          "refId": "B",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, packet_loss_percent as \"Carrier DNS\" FROM network_quality_results WHERE target_host = '208.54.0.1' ORDER BY timestamp_unix",
+          "refId": "C",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        }
+      ],
+      "title": "Packet Loss Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres"
+      },
+      "description": "Correlate ping latency with signal quality - do latency spikes match SINR drops?",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Latency (ms)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF9830",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "unit",
+                "value": "ms"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Jitter (ms)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#F2495C",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              },
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [5, 5],
+                  "fill": "dash"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "5G SINR (dB)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "unit",
+                "value": "dB"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 204,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "min", "max", "lastNotNull"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "10.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Latency (ms)\" FROM network_quality_results WHERE target_host = '8.8.8.8' AND status = 'success' ORDER BY timestamp_unix",
+          "refId": "A",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Jitter (ms)\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
+          "refId": "B",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres"
+          },
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_sinr as \"5G SINR (dB)\" FROM signal_history WHERE nr_sinr IS NOT NULL ORDER BY timestamp_unix",
+          "refId": "C",
+          "format": "time_series",
+          "timeColumns": ["time"]
+        }
+      ],
+      "title": "Latency vs Signal Quality Correlation",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
       },
       "id": 102,
       "panels": [],
@@ -1395,7 +2007,7 @@
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(nr_bands, 'n', ''), ',', '') AS INTEGER) as \"5G Band\" FROM signal_history WHERE nr_bands IS NOT NULL AND nr_bands != '' ORDER BY time",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(regexp_replace(nr_bands::text, '[^0-9]', '', 'g') AS INTEGER) as \"5G Band\" FROM signal_history WHERE nr_bands IS NOT NULL AND nr_bands != '' AND nr_bands != '[]' ORDER BY time",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
@@ -1406,7 +2018,7 @@
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(REPLACE(REPLACE(lte_bands, 'B', ''), ',', '') AS INTEGER) as \"4G Band\" FROM signal_history WHERE lte_bands IS NOT NULL AND lte_bands != '' ORDER BY time",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(regexp_replace(lte_bands::text, '[^0-9]', '', 'g') AS INTEGER) as \"4G Band\" FROM signal_history WHERE lte_bands IS NOT NULL AND lte_bands != '' AND lte_bands != '[]' ORDER BY time",
           "refId": "B",
           "format": "time_series",
           "timeColumns": ["time"]

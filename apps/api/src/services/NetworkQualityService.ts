@@ -198,7 +198,7 @@ const parsePingOutput = (
       if (timeMatch) {
         latencies.push(parseFloat(timeMatch[1]))
       }
-      const statsMatch = line.match(/(\d+)\s+packets transmitted,\s*(\d+)\s+received/i)
+      const statsMatch = line.match(/(\d+)\s+packets transmitted,\s*(\d+)\s+(?:packets\s+)?received/i)
       if (statsMatch) {
         packetsSent = parseInt(statsMatch[1])
         packetsReceived = parseInt(statsMatch[2])
@@ -229,10 +229,18 @@ const pingTarget = (
   timeoutSeconds: number
 ): Effect.Effect<NetworkQualityResult, NetworkQualityError> =>
   Effect.gen(function* () {
-    const isWindows = os.platform() === "win32"
+    const platform = os.platform()
+    const isWindows = platform === "win32"
+    const isMac = platform === "darwin"
+
+    // macOS: -W is in milliseconds, -t is overall timeout in seconds
+    // Linux: -W is in seconds
+    // Windows: -w is in milliseconds
     const cmd = isWindows
       ? ["ping", "-n", String(pingCount), "-w", String(timeoutSeconds * 1000), target.host]
-      : ["ping", "-c", String(pingCount), "-W", String(timeoutSeconds), target.host]
+      : isMac
+        ? ["ping", "-c", String(pingCount), "-W", String(timeoutSeconds * 1000), target.host]
+        : ["ping", "-c", String(pingCount), "-W", String(timeoutSeconds), target.host]
 
     const now = new Date()
     const result = yield* runCommand(cmd, timeoutSeconds * pingCount + 10).pipe(

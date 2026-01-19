@@ -563,7 +563,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24:00') as time, AVG(nr_sinr) as \"Avg SINR\", MIN(nr_sinr) as \"Min SINR\", MAX(nr_sinr) as \"Max SINR\" FROM signal_history WHERE nr_sinr IS NOT NULL GROUP BY to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24') ORDER BY time",
+          "rawSql": "SELECT EXTRACT(EPOCH FROM date_trunc('hour', to_timestamp(timestamp_unix))) * 1000 as time, AVG(nr_sinr) as \"Avg SINR\", MIN(nr_sinr) as \"Min SINR\", MAX(nr_sinr) as \"Max SINR\" FROM signal_history WHERE nr_sinr IS NOT NULL GROUP BY date_trunc('hour', to_timestamp(timestamp_unix)) ORDER BY time",
           "refId": "A",
           "format": "table"
         }
@@ -614,7 +614,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24:00') as time, AVG(nr_rsrp) as \"Avg RSRP\", MIN(nr_rsrp) as \"Min RSRP\", MAX(nr_rsrp) as \"Max RSRP\" FROM signal_history WHERE nr_rsrp IS NOT NULL GROUP BY to_char(to_timestamp(timestamp_unix), 'YYYY-MM-DD HH24') ORDER BY time",
+          "rawSql": "SELECT EXTRACT(EPOCH FROM date_trunc('hour', to_timestamp(timestamp_unix))) * 1000 as time, AVG(nr_rsrp) as \"Avg RSRP\", MIN(nr_rsrp) as \"Min RSRP\", MAX(nr_rsrp) as \"Max RSRP\" FROM signal_history WHERE nr_rsrp IS NOT NULL GROUP BY date_trunc('hour', to_timestamp(timestamp_unix)) ORDER BY time",
           "refId": "A",
           "format": "table"
         }
@@ -726,9 +726,10 @@
             "spanNulls": false
           },
           "mappings": [
-            { "options": { "n41": { "color": "green", "index": 0, "text": "n41 (2.5GHz)" } }, "type": "value" },
-            { "options": { "n71": { "color": "blue", "index": 1, "text": "n71 (600MHz)" } }, "type": "value" },
-            { "options": { "n77": { "color": "purple", "index": 2, "text": "n77 (3.7GHz)" } }, "type": "value" }
+            { "options": { "41": { "color": "green", "index": 0, "text": "n41 (2.5GHz)" } }, "type": "value" },
+            { "options": { "71": { "color": "blue", "index": 1, "text": "n71 (600MHz)" } }, "type": "value" },
+            { "options": { "77": { "color": "purple", "index": 2, "text": "n77 (3.7GHz)" } }, "type": "value" },
+            { "options": { "78": { "color": "orange", "index": 3, "text": "n78 (3.5GHz)" } }, "type": "value" }
           ]
         },
         "overrides": []
@@ -746,7 +747,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_bands as value, '5G Band' as metric FROM signal_history WHERE nr_bands IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(regexp_replace(nr_bands, '[^0-9]', '', 'g') AS INTEGER) as value, '5G Band' as metric FROM signal_history WHERE nr_bands IS NOT NULL AND nr_bands != '' AND nr_bands != '[]' ORDER BY timestamp_unix",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
@@ -769,10 +770,10 @@
             "spanNulls": false
           },
           "mappings": [
-            { "options": { "B2": { "color": "orange", "index": 0, "text": "B2 (1900MHz)" } }, "type": "value" },
-            { "options": { "B4": { "color": "yellow", "index": 1, "text": "B4 (1700MHz)" } }, "type": "value" },
-            { "options": { "B66": { "color": "cyan", "index": 2, "text": "B66 (AWS-3)" } }, "type": "value" },
-            { "options": { "B12": { "color": "red", "index": 3, "text": "B12 (700MHz)" } }, "type": "value" }
+            { "options": { "2": { "color": "orange", "index": 0, "text": "B2 (1900MHz)" } }, "type": "value" },
+            { "options": { "4": { "color": "yellow", "index": 1, "text": "B4 (1700MHz)" } }, "type": "value" },
+            { "options": { "66": { "color": "cyan", "index": 2, "text": "B66 (AWS-3)" } }, "type": "value" },
+            { "options": { "12": { "color": "red", "index": 3, "text": "B12 (700MHz)" } }, "type": "value" }
           ]
         },
         "overrides": []
@@ -790,7 +791,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT timestamp_unix * 1000 as time, lte_bands as value, '4G Band' as metric FROM signal_history WHERE lte_bands IS NOT NULL ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CAST(regexp_replace(lte_bands, '[^0-9]', '', 'g') AS INTEGER) as value, '4G Band' as metric FROM signal_history WHERE lte_bands IS NOT NULL AND lte_bands != '' AND lte_bands != '[]' ORDER BY timestamp_unix",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
