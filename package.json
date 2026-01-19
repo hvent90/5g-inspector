@@ -18,7 +18,12 @@
     "test": "bun run --filter '*' test",
     "infra:up": "podman compose -f infra/docker-compose.yml up -d",
     "infra:down": "podman compose -f infra/docker-compose.yml down",
-    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules"
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules",
+    "pm2:start": "bunx pm2 start ecosystem.config.cjs",
+    "pm2:stop": "bunx pm2 stop all",
+    "pm2:restart": "bunx pm2 restart all",
+    "pm2:logs": "bunx pm2 logs",
+    "pm2:status": "bunx pm2 status"
   },
   "devDependencies": {
     "typescript": "^5.3.0"

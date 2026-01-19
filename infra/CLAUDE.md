@@ -7,12 +7,12 @@
 | PostgreSQL | 5433 | Data storage (netpulse:netpulse_secret) |
 | Grafana | 3002 | Dashboards & Alerting (admin/netpulse123) |
 
-> **Note:** The API backend (apps/api) polls the gateway directly at 200ms intervals and stores data in PostgreSQL, which Grafana queries using its native PostgreSQL datasource (no plugins needed).
+> **Note:** The API backend (apps/api) polls the gateway directly at 2-second intervals and stores data in PostgreSQL, which Grafana queries using its native PostgreSQL datasource (no plugins needed).
 
 ## Database Setup
 
 PostgreSQL tables:
-- `signal_history` - Raw signal samples (200ms interval)
+- `signal_history` - Raw signal samples (2-second interval)
 - `speedtest_results` - Speed test results with signal snapshots
 - `disruption_events` - Detected signal disruptions
 - `network_quality_results` - Network quality ping results

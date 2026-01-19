@@ -92,7 +92,7 @@ main() {
     cd "$REPO_ROOT"
 
     # Step 1: Check container runtime
-    echo -e "${CYAN}[1/4] Checking container runtime...${NC}"
+    echo -e "${CYAN}[1/5] Checking container runtime...${NC}"
     if command -v podman &> /dev/null; then
         COMPOSE_CMD="podman compose"
         # Check if podman machine is needed (macOS/Windows)
@@ -113,14 +113,31 @@ main() {
         exit 1
     fi
 
-    # Step 2: Start Grafana container
-    echo -e "${CYAN}[2/4] Starting Grafana container...${NC}"
+    # Step 2: Start Grafana container (includes PostgreSQL)
+    echo -e "${CYAN}[2/5] Starting Grafana container...${NC}"
 
     $COMPOSE_CMD -f infra/docker-compose.yml up -d
     echo -e "      ${GREEN}Grafana container started.${NC}"
 
-    # Step 3: Start backend
-    echo -e "${CYAN}[3/4] Starting backend (port 3001)...${NC}"
+    # Step 3: Wait for PostgreSQL and run migrations
+    echo -e "${CYAN}[3/5] Running database migrations...${NC}"
+    cd "$REPO_ROOT/apps/api"
+
+    # Wait for PostgreSQL to be ready (up to 30 seconds)
+    for i in {1..30}; do
+        if bun run db:migrate 2>/dev/null; then
+            echo -e "      ${GREEN}Database migrations complete.${NC}"
+            break
+        fi
+        if [ $i -eq 30 ]; then
+            echo -e "      ${RED}Warning: Database migration failed. PostgreSQL may not be ready.${NC}"
+        fi
+        sleep 1
+    done
+    cd "$REPO_ROOT"
+
+    # Step 4: Start backend
+    echo -e "${CYAN}[4/5] Starting backend (port 3001)...${NC}"
     cd "$REPO_ROOT/apps/api"
     bun run dev &
     BACKEND_PID=$!
@@ -128,8 +145,8 @@ main() {
     sleep 2
     echo -e "      ${GREEN}Backend started (PID: $BACKEND_PID).${NC}"
 
-    # Step 4: Start frontend with LAN access
-    echo -e "${CYAN}[4/4] Starting frontend (port 5173 with LAN access)...${NC}"
+    # Step 5: Start frontend with LAN access
+    echo -e "${CYAN}[5/5] Starting frontend (port 5173 with LAN access)...${NC}"
     bun run dev:web -- --host 0.0.0.0 &
     FRONTEND_PID=$!
     sleep 3

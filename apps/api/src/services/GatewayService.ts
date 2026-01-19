@@ -381,7 +381,7 @@ const makeGatewayService = (
     const signalPubSub = yield* PubSub.unbounded<SignalData>()
     const outagePubSub = yield* PubSub.unbounded<OutageEvent>()
 
-    // Batch queue for database writes (200ms polling -> batch every 5 seconds)
+    // Batch queue for database writes (2s polling -> batch every 5 seconds)
     const batchQueue = yield* Queue.unbounded<SignalHistoryInsert>()
 
     // Circuit breaker

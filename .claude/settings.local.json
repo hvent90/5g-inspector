@@ -89,7 +89,26 @@
       "Bash(podman build:*)",
       "WebFetch(domain:effect-ts.github.io)",
       "Bash($env:PGPASSWORD='netpulse_secret')",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(bun run db:migrate:*)",
+      "Bash(lsof:*)",
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw:*)",
+      "Bash(sudo /usr/libexec/ApplicationFirewall/socketfilterfw:*)",
+      "Bash(curl:*)",
+      "Bash(scutil:*)",
+      "Bash(pgrep:*)",
+      "Bash(xargs ps:*)",
+      "Bash(podman system df:*)",
+      "Bash(pm2:*)",
+      "Bash(bun install:*)",
+      "Bash(~/.bun/bin/pm2:*)",
+      "Bash(bunx pm2:*)",
+      "Bash(kill:*)",
+      "Bash(bun run pm2:start:*)",
+      "Bash(PGPASSWORD=netpulse_secret psql:*)",
+      "Bash(jq:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

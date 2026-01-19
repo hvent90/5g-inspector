@@ -4,7 +4,24 @@ A network monitoring dashboard for T-Mobile home internet, built with Effect/Typ
 
 ## Quick Start
 
-### Using Scripts (Recommended)
+### Using pm2 (Recommended)
+
+```bash
+bun run infra:up       # Start PostgreSQL + Grafana
+bun run pm2:start      # Start api + web services
+```
+
+**Manage services:**
+```bash
+bun run pm2:status     # Check status
+bun run pm2:logs       # Tail all logs
+bun run pm2:stop       # Stop services
+bunx pm2 restart api   # Restart individual service
+```
+
+Logs persist in `./logs/`.
+
+### Using Scripts
 
 ```bash
 # Windows (PowerShell)
@@ -52,8 +69,10 @@ bun run dev --host  # --host exposes on LAN
 
 ## Stopping the Stack
 
-- Press `Ctrl+C` in each terminal
-- Run `bun run infra:down` to stop containers
+```bash
+bun run pm2:stop       # Stop api + web
+bun run infra:down     # Stop containers
+```
 
 If processes get orphaned, use the kill scripts:
 ```bash
@@ -77,4 +96,5 @@ bun run dev:app    # Apps only (skip infra)
 - **Frontend:** React + Base UI
 - **Database:** PostgreSQL
 - **Visualization:** Grafana
+- **Process Manager:** pm2
 - **Package Manager:** Bun

@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: '::',
+    allowedHosts: ['mini.local'],
+    hmr: {
+      host: 'mini.local'
+    },
     proxy: {
       '/api': 'http://localhost:3001'
     }

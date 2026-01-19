@@ -135,6 +135,25 @@ If processes get orphaned (e.g., after a crash), use the kill scripts to clean u
 
 **Output includes:** Port status showing which ports are free vs still in use
 
+## pm2 Service Management
+
+pm2 manages api and web services (infra stays on podman compose).
+
+```bash
+bun run infra:up       # Start PostgreSQL + Grafana first
+bun run pm2:start      # Start api + web
+bun run pm2:status     # Check status
+bun run pm2:logs       # Tail all logs
+bun run pm2:stop       # Stop services
+
+# Individual control
+bunx pm2 restart api   # Restart just API
+bunx pm2 logs api      # Tail API only
+bunx pm2 show api      # Uptime, restarts, memory
+```
+
+Logs persist in `./logs/` (api-out.log, api-error.log, web-out.log, web-error.log).
+
 ---
 
 ## Current State
@@ -147,4 +166,5 @@ If processes get orphaned (e.g., after a crash), use the kill scripts to clean u
 | Frontend UI | Base UI |
 | Linting | oxfmt (TS) |
 | Infra commands | bun run infra:* |
+| Process manager | pm2 (api, web services) |
 | Monorepo | Full workspace |
