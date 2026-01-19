@@ -22,6 +22,8 @@ export interface SchedulerConfig {
   readonly time_window_start?: number // Hour (0-23) when scheduler can run
   readonly time_window_end?: number // Hour (0-23) when scheduler stops
   readonly run_on_weekends?: boolean
+  readonly tools_to_run?: readonly string[] // Tools to run each cycle (undefined = default single-tool)
+  readonly delay_between_tools_seconds?: number // Delay between tools (default 10)
 }
 
 export interface SchedulerStats {
@@ -105,6 +107,8 @@ const DEFAULT_CONFIG: SchedulerConfig = {
   time_window_start: undefined,
   time_window_end: undefined,
   run_on_weekends: true,
+  tools_to_run: undefined, // undefined = use default single-tool behavior
+  delay_between_tools_seconds: 10,
 }
 
 // ============================================
@@ -165,7 +169,27 @@ export const SchedulerServiceLive = Layer.effect(
     }
 
     /**
-     * Run a single scheduled speedtest
+     * Handle a single speedtest result (update stats)
+     */
+    const handleResult = (result: SpeedtestResult) =>
+      Effect.gen(function* () {
+        yield* Ref.set(lastTestTimeRef, new Date())
+
+        if (result.status === "success") {
+          yield* Ref.update(testsCompletedRef, (n) => n + 1)
+          yield* Ref.update(downloadSumRef, (sum) => sum + result.download_mbps)
+          yield* Ref.update(uploadSumRef, (sum) => sum + result.upload_mbps)
+          yield* Effect.logInfo(
+            `Scheduler: Test complete (${result.tool}) - ${result.download_mbps} Mbps down, ${result.upload_mbps} Mbps up`
+          )
+        } else {
+          yield* Ref.update(testsFailedRef, (n) => n + 1)
+          yield* Effect.logWarning(`Scheduler: Test failed (${result.tool}) - ${result.error_message ?? result.status}`)
+        }
+      })
+
+    /**
+     * Run scheduled speedtest(s) - supports multi-tool mode
      */
     const runScheduledTest = Effect.gen(function* () {
       const config = yield* Ref.get(configRef)
@@ -176,24 +200,35 @@ export const SchedulerServiceLive = Layer.effect(
         return
       }
 
-      yield* Effect.logInfo("Scheduler: Running scheduled speedtest")
+      const toolsToRun = config.tools_to_run ?? []
 
-      const result = yield* speedtestService.runSpeedtest({
-        triggeredBy: "scheduler",
-      })
-
-      yield* Ref.set(lastTestTimeRef, new Date())
-
-      if (result.status === "success") {
-        yield* Ref.update(testsCompletedRef, (n) => n + 1)
-        yield* Ref.update(downloadSumRef, (sum) => sum + result.download_mbps)
-        yield* Ref.update(uploadSumRef, (sum) => sum + result.upload_mbps)
-        yield* Effect.logInfo(
-          `Scheduler: Test complete - ${result.download_mbps} Mbps down, ${result.upload_mbps} Mbps up`
-        )
+      if (toolsToRun.length === 0) {
+        // Original single-tool behavior (auto-select best available tool)
+        yield* Effect.logInfo("Scheduler: Running scheduled speedtest")
+        const result = yield* speedtestService.runSpeedtest({
+          triggeredBy: "scheduler",
+        })
+        yield* handleResult(result)
       } else {
-        yield* Ref.update(testsFailedRef, (n) => n + 1)
-        yield* Effect.logWarning(`Scheduler: Test failed - ${result.error_message ?? result.status}`)
+        // Multi-tool: run each in sequence
+        yield* Effect.logInfo(`Scheduler: Running ${toolsToRun.length} tools: ${toolsToRun.join(", ")}`)
+
+        for (const tool of toolsToRun) {
+          yield* Effect.logInfo(`Scheduler: Running ${tool}`)
+          const result = yield* speedtestService.runSpeedtest({
+            triggeredBy: "scheduler",
+            tool,
+          })
+          yield* handleResult(result)
+
+          // Delay between tools (skip after last)
+          if (tool !== toolsToRun.at(-1)) {
+            const delay = config.delay_between_tools_seconds ?? 10
+            yield* Effect.logDebug(`Scheduler: Waiting ${delay}s before next tool`)
+            yield* Effect.sleep(Duration.seconds(delay))
+          }
+        }
+        yield* Effect.logInfo("Scheduler: Multi-tool cycle complete")
       }
     })
 
@@ -238,6 +273,24 @@ export const SchedulerServiceLive = Layer.effect(
             if (updates.interval_minutes < 1 || updates.interval_minutes > 1440) {
               return yield* Effect.fail(
                 new SchedulerError("config", "Interval must be between 1 and 1440 minutes")
+              )
+            }
+          }
+
+          // Validate delay_between_tools_seconds
+          if (updates.delay_between_tools_seconds !== undefined) {
+            if (updates.delay_between_tools_seconds < 0 || updates.delay_between_tools_seconds > 300) {
+              return yield* Effect.fail(
+                new SchedulerError("config", "Delay between tools must be between 0 and 300 seconds")
+              )
+            }
+          }
+
+          // Validate tools_to_run (basic validation - just check it's an array of strings)
+          if (updates.tools_to_run !== undefined) {
+            if (updates.tools_to_run.length > 10) {
+              return yield* Effect.fail(
+                new SchedulerError("config", "Cannot run more than 10 tools per cycle")
               )
             }
           }

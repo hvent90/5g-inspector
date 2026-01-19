@@ -450,7 +450,7 @@
         "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
-      "description": "Download and upload speeds over time from PostgreSQL",
+      "description": "Download speeds by tool showing performance comparison across fast-cli, CDN tests, and speedtest-cli",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -499,15 +499,45 @@
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "Download"},
+            "matcher": {"id": "byName", "options": "fast-cli"},
             "properties": [
-              {"id": "color", "value": {"fixedColor": "#73BF69", "mode": "fixed"}}
+              {"id": "color", "value": {"fixedColor": "#73BF69", "mode": "fixed"}},
+              {"id": "displayName", "value": "Netflix (fast-cli)"}
             ]
           },
           {
-            "matcher": {"id": "byName", "options": "Upload"},
+            "matcher": {"id": "byName", "options": "cdn-cloudflare"},
             "properties": [
-              {"id": "color", "value": {"fixedColor": "#5794F2", "mode": "fixed"}}
+              {"id": "color", "value": {"fixedColor": "#FF9830", "mode": "fixed"}},
+              {"id": "displayName", "value": "Cloudflare CDN"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "cdn-aws"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#FADE2A", "mode": "fixed"}},
+              {"id": "displayName", "value": "AWS CDN"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "cdn-google"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#5794F2", "mode": "fixed"}},
+              {"id": "displayName", "value": "Google CDN"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "speedtest-cli"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#B877D9", "mode": "fixed"}},
+              {"id": "displayName", "value": "Speedtest CLI"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "ookla-speedtest"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "#36A2EB", "mode": "fixed"}},
+              {"id": "displayName", "value": "Ookla Speedtest"}
             ]
           }
         ]
@@ -529,29 +559,43 @@
       "pluginVersion": "10.3.1",
       "targets": [
         {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "postgres"
-          },
-          "rawQueryText": "SELECT timestamp_unix * 1000 as time, download_mbps as \"Download\" FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"Download\" FROM speedtest_results ORDER BY timestamp_unix",
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"fast-cli\" FROM speedtest_results WHERE tool = 'fast-cli' ORDER BY timestamp_unix",
           "refId": "A",
-          "format": "time_series",
-          "timeColumns": ["time"]
+          "format": "time_series"
         },
         {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "postgres"
-          },
-          "rawQueryText": "SELECT timestamp_unix * 1000 as time, upload_mbps as \"Upload\" FROM speedtest_results ORDER BY timestamp_unix",
-          "rawSql": "SELECT timestamp_unix * 1000 as time, upload_mbps as \"Upload\" FROM speedtest_results ORDER BY timestamp_unix",
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"cdn-cloudflare\" FROM speedtest_results WHERE tool = 'cdn-cloudflare' ORDER BY timestamp_unix",
           "refId": "B",
-          "format": "time_series",
-          "timeColumns": ["time"]
+          "format": "time_series"
+        },
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"cdn-aws\" FROM speedtest_results WHERE tool = 'cdn-aws' ORDER BY timestamp_unix",
+          "refId": "C",
+          "format": "time_series"
+        },
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"cdn-google\" FROM speedtest_results WHERE tool = 'cdn-google' ORDER BY timestamp_unix",
+          "refId": "D",
+          "format": "time_series"
+        },
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"speedtest-cli\" FROM speedtest_results WHERE tool = 'speedtest-cli' ORDER BY timestamp_unix",
+          "refId": "E",
+          "format": "time_series"
+        },
+        {
+          "datasource": {"type": "grafana-postgresql-datasource", "uid": "postgres"},
+          "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"ookla-speedtest\" FROM speedtest_results WHERE tool = 'ookla-speedtest' ORDER BY timestamp_unix",
+          "refId": "F",
+          "format": "time_series"
         }
       ],
-      "title": "Speed Test History",
+      "title": "Download Speed by Tool",
       "type": "timeseries"
     },
     {

@@ -104,7 +104,20 @@ interface ToolResult {
 // Constants
 // ============================================
 
-const ALL_KNOWN_TOOLS = ["fast-cli", "ookla-speedtest", "speedtest-cli"] as const
+const ALL_KNOWN_TOOLS = [
+  "fast-cli", "ookla-speedtest", "speedtest-cli",
+  "cdn-cloudflare", "cdn-aws", "cdn-google"
+] as const
+
+/**
+ * CDN test URLs for realistic throughput measurement.
+ * These bypass ISP speed test prioritization.
+ */
+const CDN_TEST_URLS = {
+  cloudflare: "https://speed.cloudflare.com/__down?bytes=25000000",
+  aws: "https://awscli.amazonaws.com/AWSCLIV2.pkg",
+  google: "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-darwin-arm.tar.gz"
+} as const
 
 const DEFAULT_CONFIG: SpeedtestConfig = {
   // fast-cli (Netflix) is preferred as ISPs can't easily game it
@@ -207,6 +220,121 @@ const isFastCliAvailable = (): Effect.Effect<boolean> =>
   )
 
 /**
+ * Check if curl is available (needed for CDN tests)
+ */
+const isCurlAvailable = (): Effect.Effect<boolean> =>
+  runCommand(["curl", "--version"], 5).pipe(
+    Effect.map(({ code }) => code === 0),
+    Effect.catchAll(() => Effect.succeed(false))
+  )
+
+/**
+ * Run CDN-based speed test using curl.
+ * Downloads a file from a CDN and measures throughput.
+ * Provides realistic speed measurements that ISPs can't easily prioritize.
+ */
+const runCdnTest = (
+  cdnName: string,
+  url: string,
+  timeout: number
+): Effect.Effect<ToolResult, SpeedtestError> =>
+  Effect.gen(function* () {
+    const toolName = `cdn-${cdnName}`
+
+    // First, measure ping via HEAD request
+    const pingResult = yield* runCommand(
+      ["curl", "-s", "-o", "/dev/null", "-w", "%{time_connect}", "-I", url],
+      10
+    ).pipe(Effect.catchAll(() => Effect.succeed({ stdout: "", stderr: "", code: 1 })))
+
+    const pingMs = pingResult.code === 0 && pingResult.stdout
+      ? Math.round(parseFloat(pingResult.stdout) * 1000 * 10) / 10
+      : 0
+
+    // Download with timing stats
+    // -w format: speed_download (bytes/sec), time_total (seconds)
+    const { stdout, stderr, code } = yield* runCommand(
+      [
+        "curl", "-s", "-o", "/dev/null",
+        "-w", "%{speed_download}|%{time_total}|%{http_code}",
+        "--max-time", String(timeout),
+        url
+      ],
+      timeout + 5
+    )
+
+    if (code !== 0) {
+      return {
+        status: "error" as const,
+        download_mbps: 0,
+        upload_mbps: 0,
+        ping_ms: 0,
+        jitter_ms: null,
+        server_name: null,
+        server_location: null,
+        server_host: null,
+        server_id: null,
+        client_ip: null,
+        isp: null,
+        tool: toolName,
+        result_url: null,
+        error_message: stderr || `curl exit code ${code}`,
+      }
+    }
+
+    // Parse curl output: speed_download|time_total|http_code
+    const parts = stdout.trim().split("|")
+    const speedBytesPerSec = parseFloat(parts[0] ?? "0")
+    const httpCode = parseInt(parts[2] ?? "0", 10)
+
+    if (httpCode < 200 || httpCode >= 400) {
+      return {
+        status: "error" as const,
+        download_mbps: 0,
+        upload_mbps: 0,
+        ping_ms: 0,
+        jitter_ms: null,
+        server_name: null,
+        server_location: null,
+        server_host: null,
+        server_id: null,
+        client_ip: null,
+        isp: null,
+        tool: toolName,
+        result_url: null,
+        error_message: `HTTP ${httpCode}`,
+      }
+    }
+
+    // Convert bytes/sec to Mbps (bits = bytes * 8, Mbps = bits / 1_000_000)
+    const downloadMbps = Math.round((speedBytesPerSec * 8) / 1_000_000 * 100) / 100
+
+    // Determine server name based on CDN
+    const serverNames: Record<string, string> = {
+      cloudflare: "Cloudflare CDN",
+      aws: "AWS CloudFront",
+      google: "Google CDN"
+    }
+
+    return {
+      status: "success" as const,
+      download_mbps: downloadMbps,
+      upload_mbps: 0, // CDN tests are download-only
+      ping_ms: pingMs,
+      jitter_ms: null,
+      server_name: serverNames[cdnName] ?? `${cdnName} CDN`,
+      server_location: null,
+      server_host: new URL(url).hostname,
+      server_id: null,
+      client_ip: null,
+      isp: null,
+      tool: toolName,
+      result_url: url,
+      error_message: null,
+    }
+  })
+
+/**
  * Detect available speedtest tools
  */
 const detectAvailableTools = (): Effect.Effect<string[]> =>
@@ -222,6 +350,14 @@ const detectAvailableTools = (): Effect.Effect<string[]> =>
 
     const cliOk = yield* isSpeedtestCliAvailable()
     if (cliOk) available.push("speedtest-cli")
+
+    // CDN tools require curl
+    const curlOk = yield* isCurlAvailable()
+    if (curlOk) {
+      available.push("cdn-cloudflare")
+      available.push("cdn-aws")
+      available.push("cdn-google")
+    }
 
     yield* Effect.logDebug(`Speedtest tools detected: ${available.join(", ") || "none"}`)
     return available
@@ -606,6 +742,12 @@ export const SpeedtestServiceLive = Layer.effect(
           return runOoklaSpeedtest(timeout, serverId)
         case "speedtest-cli":
           return runSpeedtestCli(timeout)
+        case "cdn-cloudflare":
+          return runCdnTest("cloudflare", CDN_TEST_URLS.cloudflare, timeout)
+        case "cdn-aws":
+          return runCdnTest("aws", CDN_TEST_URLS.aws, timeout)
+        case "cdn-google":
+          return runCdnTest("google", CDN_TEST_URLS.google, timeout)
         default:
           return Effect.fail(new SpeedtestError("no_tool", `Unknown tool: ${tool}`))
       }

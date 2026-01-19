@@ -197,6 +197,17 @@ const startScheduler = Effect.gen(function* () {
   }
 })
 
+// Program to start network quality monitoring
+const startNetworkQuality = Effect.gen(function* () {
+  const service = yield* NetworkQualityService
+  const config = yield* service.getConfig()
+
+  if (config.enabled) {
+    yield* service.start()
+    yield* Effect.log(`Network quality monitoring started (interval: ${config.interval_minutes} minutes)`)
+  }
+})
+
 // Main program
 const main = Effect.gen(function* () {
   // Log startup info
@@ -217,6 +228,9 @@ const main = Effect.gen(function* () {
 
   // Start speedtest scheduler (if enabled by default)
   yield* startScheduler
+
+  // Start network quality monitoring (if enabled by default)
+  yield* startNetworkQuality
 
   // Launch the server (this runs forever)
   // ServicesLayer is provided to the app layer for HTTP handlers

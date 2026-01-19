@@ -20,6 +20,8 @@ const SchedulerConfigUpdateSchema = Schema.Struct({
   time_window_start: Schema.optional(Schema.Number),
   time_window_end: Schema.optional(Schema.Number),
   run_on_weekends: Schema.optional(Schema.Boolean),
+  tools_to_run: Schema.optional(Schema.Array(Schema.String)),
+  delay_between_tools_seconds: Schema.optional(Schema.Number),
 })
 
 /**
@@ -56,6 +58,8 @@ export const SchedulerRoutes = HttpRouter.empty.pipe(
           time_window_start: undefined,
           time_window_end: undefined,
           run_on_weekends: undefined,
+          tools_to_run: undefined,
+          delay_between_tools_seconds: undefined,
         }))
       )
 
