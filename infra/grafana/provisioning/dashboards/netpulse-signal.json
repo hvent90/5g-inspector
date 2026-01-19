@@ -2,7 +2,7 @@
   "annotations": {
     "list": [
       {
-        "datasource": { "type": "postgres", "uid": "postgres" },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
         "enable": true,
         "iconColor": "red",
         "name": "Disruption Events",
@@ -26,7 +26,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -74,7 +74,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -122,7 +122,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -170,7 +170,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -216,7 +216,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -264,7 +264,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -312,7 +312,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -360,7 +360,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -406,7 +406,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -460,7 +460,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -521,7 +521,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -572,7 +572,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -630,7 +630,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -668,7 +668,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -713,7 +713,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -756,7 +756,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -800,7 +800,7 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -840,7 +840,7 @@
       "type": "barchart"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -887,7 +887,7 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -920,7 +920,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -954,7 +954,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -993,7 +993,7 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "postgres", "uid": "postgres" },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "postgres" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },

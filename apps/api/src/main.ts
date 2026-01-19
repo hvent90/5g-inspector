@@ -71,8 +71,17 @@ import { NetworkQualityService, NetworkQualityServiceLive } from "./services/Net
 // Server configuration
 const PORT = Number(process.env.PORT ?? 3001)
 
-// Database and repository layers - using PostgreSQL
-const RepositoryLayer = Layer.provide(SignalRepositoryLive, PgClientLive)
+// Database layer - provides SqlClient to all services that need it
+const DbLayer = PgClientLive
+
+// Repository layer - uses SqlClient
+const RepositoryLayer = Layer.provide(SignalRepositoryLive, DbLayer)
+
+// Network Quality layer - uses SqlClient directly AND SignalRepository
+const NetworkQualityLayer = NetworkQualityServiceLive.pipe(
+  Layer.provide(RepositoryLayer),
+  Layer.provide(DbLayer)
+)
 
 // Gateway service layer with all dependencies
 const GatewayLayer = GatewayServiceLive.pipe(
@@ -92,9 +101,6 @@ const SchedulerLayer = Layer.provide(SchedulerServiceLive, SpeedtestLayer)
 
 // Diagnostics service layer
 const DiagnosticsLayer = Layer.provide(DiagnosticsServiceLive, RepositoryLayer)
-
-// Network Quality service layer - now uses PostgreSQL via SignalRepository
-const NetworkQualityLayer = Layer.provide(NetworkQualityServiceLive, RepositoryLayer)
 
 // Combined service layer
 const ServicesLayer = Layer.mergeAll(
@@ -157,7 +163,8 @@ const router = HttpRouter.empty.pipe(
 const app = router.pipe(HttpServer.serve())
 
 // Server layer with Bun runtime
-const ServerLive = BunHttpServer.layer({ port: PORT })
+// idleTimeout set high for long-running requests like speedtests (up to 120s)
+const ServerLive = BunHttpServer.layer({ port: PORT, idleTimeout: 180 })
 
 // Program to start gateway polling
 const startGatewayPolling = Effect.gen(function* () {
@@ -179,6 +186,17 @@ const startGatewayPolling = Effect.gen(function* () {
   )
 })
 
+// Program to start speedtest scheduler
+const startScheduler = Effect.gen(function* () {
+  const schedulerService = yield* SchedulerService
+  const config = yield* schedulerService.getConfig()
+
+  if (config.enabled) {
+    yield* schedulerService.start()
+    yield* Effect.log(`Speedtest scheduler started (interval: ${config.interval_minutes} minutes)`)
+  }
+})
+
 // Main program
 const main = Effect.gen(function* () {
   // Log startup info
@@ -196,6 +214,9 @@ const main = Effect.gen(function* () {
   // Start gateway polling
   yield* startGatewayPolling
   yield* Effect.log("Gateway polling started")
+
+  // Start speedtest scheduler (if enabled by default)
+  yield* startScheduler
 
   // Launch the server (this runs forever)
   // ServicesLayer is provided to the app layer for HTTP handlers

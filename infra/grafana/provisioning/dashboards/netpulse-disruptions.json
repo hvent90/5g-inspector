@@ -15,7 +15,7 @@
       },
       {
         "datasource": {
-          "type": "postgres",
+          "type": "grafana-postgresql-datasource",
           "uid": "postgres"
         },
         "enable": true,
@@ -26,7 +26,7 @@
       },
       {
         "datasource": {
-          "type": "postgres",
+          "type": "grafana-postgresql-datasource",
           "uid": "postgres"
         },
         "enable": true,
@@ -37,7 +37,7 @@
       },
       {
         "datasource": {
-          "type": "postgres",
+          "type": "grafana-postgresql-datasource",
           "uid": "postgres"
         },
         "enable": true,
@@ -48,7 +48,7 @@
       },
       {
         "datasource": {
-          "type": "postgres",
+          "type": "grafana-postgresql-datasource",
           "uid": "postgres"
         },
         "enable": true,
@@ -94,7 +94,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Total disruption events in selected time range",
@@ -147,12 +147,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as total FROM disruption_events",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Total Disruptions",
@@ -160,7 +161,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Number of gateway unreachable events",
@@ -213,12 +214,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as outages FROM disruption_events WHERE event_type = 'gateway_unreachable'",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Connection Drops",
@@ -226,7 +228,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Number of tower handoff events (5G and 4G)",
@@ -279,12 +281,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as handoffs FROM disruption_events WHERE event_type LIKE 'tower_change%'",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Tower Handoffs",
@@ -292,7 +295,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Number of significant signal degradation events",
@@ -345,12 +348,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COUNT(*) as drops FROM disruption_events WHERE event_type LIKE 'signal_drop%'",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Signal Degradations",
@@ -358,7 +362,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Ping success rate from continuous monitoring",
@@ -419,12 +423,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(SUM(CASE WHEN success = true THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) as success_rate FROM continuous_ping",
-          "refId": "A"
+          "rawSql": "SELECT ROUND(SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as success_rate FROM network_quality_results",
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Ping Success Rate",
@@ -432,7 +437,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Failed pings in selected time range",
@@ -485,12 +490,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as failures FROM continuous_ping WHERE success = false",
-          "refId": "A"
+          "rawSql": "SELECT COUNT(*) as failures FROM network_quality_results WHERE status != 'success'",
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Failed Pings",
@@ -511,7 +517,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "All disruption events over time with type breakdown",
@@ -635,7 +641,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -650,7 +656,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Ping success/failure timeline",
@@ -726,11 +732,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, success as \"Connectivity\" FROM continuous_ping ORDER BY timestamp_unix",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, CASE WHEN status = 'success' THEN true ELSE false END as \"Connectivity\" FROM network_quality_results WHERE target_host = '8.8.8.8' ORDER BY timestamp_unix",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
@@ -754,7 +760,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "5G SINR (Signal to Interference Noise Ratio) over time",
@@ -871,7 +877,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -886,7 +892,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Reference Signal Received Power over time",
@@ -1003,7 +1009,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1031,7 +1037,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Physical Cell ID changes over time (tower handoffs)",
@@ -1087,7 +1093,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "5G PCI"
+              "options": "5G Cell ID"
             },
             "properties": [
               {
@@ -1102,7 +1108,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "4G PCI"
+              "options": "4G Cell ID"
             },
             "properties": [
               {
@@ -1139,22 +1145,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_pci as \"5G PCI\", lte_pci as \"4G PCI\" FROM signal_history ORDER BY time",
+          "rawSql": "SELECT timestamp_unix * 1000 as time, nr_cid as \"5G Cell ID\", lte_cid as \"4G Cell ID\" FROM signal_history ORDER BY time",
           "refId": "A",
           "format": "time_series",
           "timeColumns": ["time"]
         }
       ],
-      "title": "Physical Cell ID (PCI) Changes",
+      "title": "Cell ID Changes",
       "type": "timeseries"
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Tower ID changes (gNodeB for 5G, eNodeB for 4G)",
@@ -1262,7 +1268,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1277,7 +1283,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Active frequency bands over time (5G NR and 4G LTE)",
@@ -1385,7 +1391,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1396,7 +1402,7 @@
         },
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1424,7 +1430,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Recent disruption events with details",
@@ -1573,7 +1579,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1587,7 +1593,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Failed ping events with error details",
@@ -1709,11 +1715,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, target_host, error_type, latency_ms FROM continuous_ping WHERE success = false ORDER BY timestamp_unix DESC LIMIT 100",
+          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, target_host, status as error_type, ping_ms as latency_ms FROM network_quality_results WHERE status != 'success' ORDER BY timestamp_unix DESC LIMIT 100",
           "refId": "A",
           "format": "table"
         }
@@ -1723,7 +1729,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Gateway poll failures with error details",
@@ -1841,11 +1847,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, error_type, circuit_state, error_message FROM gateway_poll_events WHERE success = false ORDER BY timestamp_unix DESC LIMIT 100",
+          "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as time, event_type as error_type, severity as circuit_state, description as error_message FROM disruption_events WHERE event_type = 'gateway_unreachable' ORDER BY timestamp_unix DESC LIMIT 100",
           "refId": "A",
           "format": "table"
         }
@@ -1868,7 +1874,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Distribution of disruption event types",
@@ -1963,7 +1969,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -1977,7 +1983,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Disruption frequency by hour of day",
@@ -2054,7 +2060,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
@@ -2068,7 +2074,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Error type distribution in gateway poll failures",
@@ -2163,21 +2169,21 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(error_type, 'unknown') as error_type, COUNT(*) as count FROM gateway_poll_events WHERE success = false GROUP BY error_type ORDER BY count DESC",
+          "rawSql": "SELECT COALESCE(event_type, 'unknown') as error_type, COUNT(*) as count FROM disruption_events GROUP BY event_type ORDER BY count DESC",
           "refId": "A",
           "format": "table"
         }
       ],
-      "title": "Gateway Error Types",
+      "title": "Disruption Event Types",
       "type": "piechart"
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average gap between consecutive failures (helps identify periodic issues)",
@@ -2231,12 +2237,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "WITH failures AS (SELECT timestamp_unix, LAG(timestamp_unix) OVER (ORDER BY timestamp_unix) as prev_time FROM continuous_ping WHERE success = false) SELECT ROUND(AVG(timestamp_unix - prev_time)::numeric, 1) as avg_gap FROM failures WHERE prev_time IS NOT NULL AND (timestamp_unix - prev_time) < 600",
-          "refId": "A"
+          "rawSql": "WITH failures AS (SELECT timestamp_unix, LAG(timestamp_unix) OVER (ORDER BY timestamp_unix) as prev_time FROM network_quality_results WHERE status != 'success') SELECT ROUND(AVG(timestamp_unix - prev_time)::numeric, 1) as avg_gap FROM failures WHERE prev_time IS NOT NULL AND (timestamp_unix - prev_time) < 3600",
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Avg. Gap Between Failures",
@@ -2244,7 +2251,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average ping latency for successful pings",
@@ -2298,12 +2305,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(AVG(latency_ms)::numeric, 1) as avg_latency FROM continuous_ping WHERE success = true",
-          "refId": "A"
+          "rawSql": "SELECT ROUND(AVG(ping_ms)::numeric, 1) as avg_latency FROM network_quality_results WHERE status = 'success'",
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Avg. Ping Latency",
@@ -2311,7 +2319,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Total estimated downtime based on failure durations",
@@ -2365,12 +2373,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQuery": true,
           "rawSql": "SELECT COALESCE(SUM(duration_seconds), 0) as total_downtime FROM disruption_events WHERE event_type = 'gateway_unreachable'",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Total Downtime",

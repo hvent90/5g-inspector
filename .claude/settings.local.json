@@ -86,7 +86,10 @@
       "Bash(scoop bucket:*)",
       "Bash(cmd.exe /c \"winget search grafana\")",
       "Bash(podman-compose build:*)",
-      "Bash(podman build:*)"
+      "Bash(podman build:*)",
+      "WebFetch(domain:effect-ts.github.io)",
+      "Bash($env:PGPASSWORD='netpulse_secret')",
+      "Bash(psql:*)"
     ]
   }
 }

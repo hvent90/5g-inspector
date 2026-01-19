@@ -12,12 +12,12 @@ datasources:
     uid: postgres
     url: postgres:5432
     user: netpulse
-    database: netpulse
     isDefault: true
     editable: false
     secureJsonData:
       password: netpulse_secret
     jsonData:
+      database: netpulse
       sslmode: disable
       maxOpenConns: 10
       maxIdleConns: 5

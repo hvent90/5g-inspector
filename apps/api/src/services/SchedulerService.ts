@@ -100,7 +100,7 @@ export class SchedulerService extends Context.Tag("SchedulerService")<
 // ============================================
 
 const DEFAULT_CONFIG: SchedulerConfig = {
-  enabled: false,
+  enabled: true,
   interval_minutes: 30,
   time_window_start: undefined,
   time_window_end: undefined,

@@ -15,7 +15,7 @@
       },
       {
         "datasource": {
-          "type": "postgres",
+          "type": "grafana-postgresql-datasource",
           "uid": "postgres"
         },
         "enable": true,
@@ -62,7 +62,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Most recent download speed from PostgreSQL",
@@ -102,12 +102,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT download_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT download_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Download Speed",
@@ -115,7 +116,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Most recent upload speed from PostgreSQL",
@@ -155,12 +156,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT upload_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT upload_mbps FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Upload Speed",
@@ -168,7 +170,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Most recent ping latency from PostgreSQL",
@@ -208,12 +210,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT ping_ms FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT ping_ms FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Ping Latency",
@@ -221,7 +224,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Total speed tests recorded in database",
@@ -257,12 +260,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT COUNT(*) as total_tests FROM speedtest_results",
           "rawSql": "SELECT COUNT(*) as total_tests FROM speedtest_results",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Total Tests",
@@ -270,7 +274,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Time of most recent speed test",
@@ -307,12 +311,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as last_test FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT timestamp_unix * 1000 as last_test FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Last Test",
@@ -320,7 +325,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average jitter from recent tests",
@@ -360,12 +365,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT jitter_ms FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT jitter_ms FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Jitter",
@@ -373,7 +379,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Latest packet loss percentage",
@@ -414,12 +420,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT COALESCE(packet_loss_percent, 0) as packet_loss FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
           "rawSql": "SELECT COALESCE(packet_loss_percent, 0) as packet_loss FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 1",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Packet Loss",
@@ -440,7 +447,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Download and upload speeds over time from PostgreSQL",
@@ -523,22 +530,24 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as time, download_mbps as \"Download\" FROM speedtest_results ORDER BY timestamp_unix",
           "rawSql": "SELECT timestamp_unix * 1000 as time, download_mbps as \"Download\" FROM speedtest_results ORDER BY timestamp_unix",
           "refId": "A",
+          "format": "time_series",
           "timeColumns": ["time"]
         },
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as time, upload_mbps as \"Upload\" FROM speedtest_results ORDER BY timestamp_unix",
           "rawSql": "SELECT timestamp_unix * 1000 as time, upload_mbps as \"Upload\" FROM speedtest_results ORDER BY timestamp_unix",
           "refId": "B",
+          "format": "time_series",
           "timeColumns": ["time"]
         }
       ],
@@ -560,7 +569,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Ping latency and jitter over time from PostgreSQL",
@@ -643,22 +652,24 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Ping\" FROM speedtest_results ORDER BY timestamp_unix",
           "rawSql": "SELECT timestamp_unix * 1000 as time, ping_ms as \"Ping\" FROM speedtest_results ORDER BY timestamp_unix",
           "refId": "A",
+          "format": "time_series",
           "timeColumns": ["time"]
         },
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Jitter\" FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
           "rawSql": "SELECT timestamp_unix * 1000 as time, jitter_ms as \"Jitter\" FROM speedtest_results WHERE jitter_ms IS NOT NULL ORDER BY timestamp_unix",
           "refId": "B",
+          "format": "time_series",
           "timeColumns": ["time"]
         }
       ],
@@ -667,7 +678,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Speed tests by network context (baseline, idle, light, busy)",
@@ -734,12 +745,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT network_context as \"Context\", COUNT(*) as \"Tests\", ROUND(AVG(download_mbps)::numeric, 1) as \"Avg Download\" FROM speedtest_results WHERE network_context IS NOT NULL GROUP BY network_context ORDER BY \"Avg Download\" DESC",
           "rawSql": "SELECT network_context as \"Context\", COUNT(*) as \"Tests\", ROUND(AVG(download_mbps)::numeric, 1) as \"Avg Download\" FROM speedtest_results WHERE network_context IS NOT NULL GROUP BY network_context ORDER BY \"Avg Download\" DESC",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Performance by Network Context",
@@ -760,7 +772,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Packet loss percentage over time from speed tests",
@@ -842,12 +854,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT timestamp_unix * 1000 as time, COALESCE(packet_loss_percent, 0) as \"Packet Loss\" FROM speedtest_results ORDER BY timestamp_unix",
           "rawSql": "SELECT timestamp_unix * 1000 as time, COALESCE(packet_loss_percent, 0) as \"Packet Loss\" FROM speedtest_results ORDER BY timestamp_unix",
           "refId": "A",
+          "format": "time_series",
           "timeColumns": ["time"]
         }
       ],
@@ -869,7 +882,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average download speed (all time)",
@@ -909,12 +922,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT ROUND(AVG(download_mbps)::numeric, 1) as avg_download FROM speedtest_results",
           "rawSql": "SELECT ROUND(AVG(download_mbps)::numeric, 1) as avg_download FROM speedtest_results",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Avg Download (All Time)",
@@ -922,7 +936,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average upload speed (all time)",
@@ -962,12 +976,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT ROUND(AVG(upload_mbps)::numeric, 1) as avg_upload FROM speedtest_results",
           "rawSql": "SELECT ROUND(AVG(upload_mbps)::numeric, 1) as avg_upload FROM speedtest_results",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Avg Upload (All Time)",
@@ -975,7 +990,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Average ping latency (all time)",
@@ -1015,12 +1030,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT ROUND(AVG(ping_ms)::numeric, 1) as avg_ping FROM speedtest_results",
           "rawSql": "SELECT ROUND(AVG(ping_ms)::numeric, 1) as avg_ping FROM speedtest_results",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Avg Ping (All Time)",
@@ -1028,7 +1044,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Peak download speed recorded",
@@ -1065,12 +1081,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT MAX(download_mbps) as peak_download FROM speedtest_results",
           "rawSql": "SELECT MAX(download_mbps) as peak_download FROM speedtest_results",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Peak Download",
@@ -1078,7 +1095,7 @@
     },
     {
       "datasource": {
-        "type": "postgres",
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres"
       },
       "description": "Recent speed test results table",
@@ -1165,12 +1182,13 @@
       "targets": [
         {
           "datasource": {
-            "type": "postgres",
+            "type": "grafana-postgresql-datasource",
             "uid": "postgres"
           },
           "rawQueryText": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as \"Time\", ROUND(download_mbps::numeric, 1) as \"Download\", ROUND(upload_mbps::numeric, 1) as \"Upload\", ROUND(ping_ms::numeric, 1) as \"Ping\", COALESCE(ROUND(packet_loss_percent::numeric, 1), 0) as \"Packet Loss\", COALESCE(network_context, '-') as \"Context\", COALESCE(tool, '-') as \"Tool\" FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 20",
           "rawSql": "SELECT to_timestamp(timestamp_unix) AT TIME ZONE 'UTC' as \"Time\", ROUND(download_mbps::numeric, 1) as \"Download\", ROUND(upload_mbps::numeric, 1) as \"Upload\", ROUND(ping_ms::numeric, 1) as \"Ping\", COALESCE(ROUND(packet_loss_percent::numeric, 1), 0) as \"Packet Loss\", COALESCE(network_context, '-') as \"Context\", COALESCE(tool, '-') as \"Tool\" FROM speedtest_results ORDER BY timestamp_unix DESC LIMIT 20",
-          "refId": "A"
+          "refId": "A",
+          "format": "table"
         }
       ],
       "title": "Recent Speed Tests",

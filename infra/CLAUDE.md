@@ -4,7 +4,7 @@
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| PostgreSQL | 5432 | Data storage (netpulse:netpulse_secret) |
+| PostgreSQL | 5433 | Data storage (netpulse:netpulse_secret) |
 | Grafana | 3002 | Dashboards & Alerting (admin/netpulse123) |
 
 > **Note:** The API backend (apps/api) polls the gateway directly at 200ms intervals and stores data in PostgreSQL, which Grafana queries using its native PostgreSQL datasource (no plugins needed).

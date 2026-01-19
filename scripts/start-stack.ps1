@@ -100,8 +100,15 @@ try {
     Pop-Location
     Write-Host "      Grafana container started." -ForegroundColor Green
 
-    # Step 3: Start backend
-    Write-Host "[3/4] Starting backend (port 3001)..." -ForegroundColor Cyan
+    # Step 3: Run database migrations
+    Write-Host "[3/5] Running database migrations..." -ForegroundColor Cyan
+    Push-Location "$RepoRoot/apps/api"
+    & bun run db:migrate
+    Pop-Location
+    Write-Host "      Migrations completed." -ForegroundColor Green
+
+    # Step 4: Start backend
+    Write-Host "[4/5] Starting backend (port 3001)..." -ForegroundColor Cyan
     $script:BackendJob = Start-Job -ScriptBlock {
         param($root)
         Set-Location "$root/apps/api"
@@ -110,8 +117,8 @@ try {
     Start-Sleep -Seconds 2
     Write-Host "      Backend started." -ForegroundColor Green
 
-    # Step 4: Start frontend with LAN access
-    Write-Host "[4/4] Starting frontend (port 5173 with LAN access)..." -ForegroundColor Cyan
+    # Step 5: Start frontend with LAN access
+    Write-Host "[5/5] Starting frontend (port 5173 with LAN access)..." -ForegroundColor Cyan
     $script:FrontendJob = Start-Job -ScriptBlock {
         param($root)
         Set-Location $root

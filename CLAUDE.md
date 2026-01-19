@@ -82,7 +82,7 @@ bun run dev:app     # Apps only (skip infra)
 | **Backend API** | 3001 | http://localhost:3001 |
 | **Frontend** | 5173 | http://localhost:5173 (Vite dev) |
 | **Grafana** | 3002 | http://localhost:3002 (admin/netpulse123) |
-| **PostgreSQL** | 5432 | postgres://netpulse:netpulse_secret@localhost:5432/netpulse |
+| **PostgreSQL** | 5433 | postgres://netpulse:netpulse_secret@localhost:5433/netpulse |
 
 > **Note:** The stack uses PostgreSQL for data storage - Grafana's native datasource (no plugins needed). Prometheus, Alertmanager, Mimir, Loki, Tempo, and Gateway Exporter have been removed for simplicity.
 
