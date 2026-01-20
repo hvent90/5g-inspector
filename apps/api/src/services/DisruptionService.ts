@@ -46,6 +46,8 @@ export type DisruptionEventType =
   | "signal_drop_4g"
   | "tower_change_5g"
   | "tower_change_4g"
+  | "sector_change_5g"
+  | "sector_change_4g"
   | "band_switch_5g"
   | "band_switch_4g"
   | "connection_mode_change"
@@ -288,6 +290,101 @@ export const DisruptionServiceLive = (
       }
 
       /**
+       * Extract sector number from cell ID.
+       * T-Mobile typically uses last digit of CID as sector identifier.
+       */
+      const extractSector = (cellId: number | null): number | null => {
+        if (cellId == null) return null
+        return cellId % 10
+      }
+
+      /**
+       * Check for 5G sector change (cell ID change on same tower).
+       * This detects when the gateway switches to a different sector
+       * of the same tower, which can significantly impact performance.
+       */
+      const check5gSectorChange = (
+        current: SignalHistoryRecord,
+        previous: SignalHistoryRecord
+      ): DetectedDisruption | null => {
+        const currGnb = current.nr_gnb_id
+        const prevGnb = previous.nr_gnb_id
+        const currCid = current.nr_cid
+        const prevCid = previous.nr_cid
+
+        // Only detect sector changes on the SAME tower
+        if (currGnb == null || prevGnb == null) return null
+        if (currGnb !== prevGnb) return null // Tower change, not sector change
+        if (currCid == null || prevCid == null) return null
+        if (currCid === prevCid) return null // No change
+
+        const prevSector = extractSector(prevCid)
+        const currSector = extractSector(currCid)
+
+        return {
+          eventType: "sector_change_5g",
+          severity: "info",
+          description: `5G sector changed: ${prevCid} → ${currCid} (sector ${prevSector} → ${currSector}, same tower ${currGnb})`,
+          beforeState: {
+            nr_gnb_id: prevGnb,
+            nr_cid: prevCid,
+            sector: prevSector,
+            nr_sinr: previous.nr_sinr,
+            nr_rsrp: previous.nr_rsrp,
+          },
+          afterState: {
+            nr_gnb_id: currGnb,
+            nr_cid: currCid,
+            sector: currSector,
+            nr_sinr: current.nr_sinr,
+            nr_rsrp: current.nr_rsrp,
+          },
+        }
+      }
+
+      /**
+       * Check for 4G sector change (cell ID change on same tower).
+       */
+      const check4gSectorChange = (
+        current: SignalHistoryRecord,
+        previous: SignalHistoryRecord
+      ): DetectedDisruption | null => {
+        const currEnb = current.lte_enb_id
+        const prevEnb = previous.lte_enb_id
+        const currCid = current.lte_cid
+        const prevCid = previous.lte_cid
+
+        // Only detect sector changes on the SAME tower
+        if (currEnb == null || prevEnb == null) return null
+        if (currEnb !== prevEnb) return null // Tower change, not sector change
+        if (currCid == null || prevCid == null) return null
+        if (currCid === prevCid) return null // No change
+
+        const prevSector = extractSector(prevCid)
+        const currSector = extractSector(currCid)
+
+        return {
+          eventType: "sector_change_4g",
+          severity: "info",
+          description: `4G sector changed: ${prevCid} → ${currCid} (sector ${prevSector} → ${currSector}, same tower ${currEnb})`,
+          beforeState: {
+            lte_enb_id: prevEnb,
+            lte_cid: prevCid,
+            sector: prevSector,
+            lte_sinr: previous.lte_sinr,
+            lte_rsrp: previous.lte_rsrp,
+          },
+          afterState: {
+            lte_enb_id: currEnb,
+            lte_cid: currCid,
+            sector: currSector,
+            lte_sinr: current.lte_sinr,
+            lte_rsrp: current.lte_rsrp,
+          },
+        }
+      }
+
+      /**
        * Check for 5G band switch (nr_bands change).
        */
       const check5gBandSwitch = (
@@ -391,6 +488,8 @@ export const DisruptionServiceLive = (
               check4gSignalDrop(current, previous),
               check5gTowerChange(current, previous),
               check4gTowerChange(current, previous),
+              check5gSectorChange(current, previous),
+              check4gSectorChange(current, previous),
               check5gBandSwitch(current, previous),
               check4gBandSwitch(current, previous),
               checkConnectionModeChange(current, previous),
